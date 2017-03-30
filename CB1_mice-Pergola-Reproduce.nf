@@ -23,7 +23,7 @@
 /*
  * Jose Espinosa-Carrasco. CB-CRG. March 2017
  *
- * Script to reproduce Pergola paper figures 
+ * Script to reproduce Pergola paper figures of CB1 mice experiment
  */ 
 
 params.recordings  = "$baseDir/small_data/mice_recordings/*.csv"
@@ -40,15 +40,14 @@ log.info "\n"
 // Example command to run the script
 /*
 nextflow run CB1_mice-Pergola-Reproduce.nf \
-  --recordings='data/mice_recordings/*.csv' \
-  --mappings='data/mappings/b2p.txt' \
+  --recordings='small_data/mice_recordings/*.csv' \
+  --mappings='small_data/mappings/b2p.txt' \
   -with-docker
 */
     
 /*
  * Input parameters validation
  */
-
 mapping_file = file(params.mappings)
 mapping_file_bG = file(params.mappings)
 
@@ -61,13 +60,11 @@ if( !mapping_file.exists() ) exit 1, "Missing mapping file: ${mapping_file}"
  * Create a channel for mice recordings 
  */
 Channel
-	.fromPath( params.recordings )
-//    .println ()
+    .fromPath( params.recordings )
     .ifEmpty { error "Cannot find any CSV file with mice data" }
-	.set { mice_files }
+    .set { mice_files }
 
 mice_files.into { mice_files_bed; mice_files_bedGraph }
-//mapping_file_ch.into { mapping_file_b; mapping_file_bG }
 
 process convert_bed {
 
