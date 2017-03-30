@@ -2,12 +2,12 @@
 
 This repository contains the software, scripts and data to reproduce the results corresponding to the CB1 mice experiment of the Pergola paper.
 
-If you have not install yet [docker](https://www.docker.com/) and [nextflow](https://www.nextflow.io/) and [nextflow](https://www.nextflow.io/), follow this [intructions](../README.md)
+If you have not install yet [docker](https://www.docker.com/) and [nextflow](https://www.nextflow.io/), follow this [intructions](../README.md)
 
 ## Data processing
 
 ### Pull docker image
-Pull the Docker images use for processing data with Pergola (Pergola and its dependencies installed)
+Pull the Docker image use for processing data with Pergola (Pergola and its dependencies installed)
 
 ```
 docker pull pergola/pergola@sha256:829984c62ac8d8d129240f3db3e5de26be2379c4a6c76d871381101ad122569a
@@ -33,7 +33,7 @@ wget -O- https://zenodo.org/record/398779/files/CB1_mice.tar.gz | tar xz -C data
 ```
 
 ### Run nextflow pipeline
-The pipeline will generate all the results.
+Once data is downloaded, it is possible to reproduce all the results using this command:
 
 ```
 NXF_VER=0.24.1 ./CB1_mice-Pergola-Reproduce.nf --recordings='data/mice_recordings/*.csv' --mappings='data/mappings/b2p.txt' -with-docker
