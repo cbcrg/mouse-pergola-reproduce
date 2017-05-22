@@ -81,5 +81,4 @@ docker-machine ip default
 
 Et voila, the running container will load the shiny app in your browser.
 
-<img src="/images/cb1_snapshot_shiny_pergola.png" alt="snapshot shiny-pergola" style="width: 100%;"/>
-
+<img src="/cb1_mice/images/cb1_snapshot_shiny_pergola.png" alt="snapshot shiny-pergola" style="width: 100%;"/>
