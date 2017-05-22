@@ -69,12 +69,12 @@ mice_files.into { mice_files_bed; mice_files_bedGraph }
 process convert_bed {
 
   	input:
-  	file ('batch') from mice_files_bed
+  	set file ('batch') from mice_files_bed
   	file mapping_file
   	
   	output:   	
-  	file 'tr*food*.bed' into bed_out
-  	file 'phases_dark.bed' into phases_dark
+  	set 'tr*food*.bed' into bed_out
+  	set 'phases_dark.bed' into phases_dark
   	
   	"""  
   	pergola_rules.py -i ${batch} -m  ${mapping_file} -f bed -nt -e  	
@@ -84,11 +84,11 @@ process convert_bed {
 process convert_bedGraph {
   
   	input:
-  	file ('batch_bg') from mice_files_bedGraph
+  	set file ('batch_bg') from mice_files_bedGraph
   	file mapping_file_bG
   	
   	output:   	
-  	file 'tr*food*.bedGraph' into bedGraph_out
+  	set 'tr*food*.bedGraph' into bedGraph_out
   	
   	"""  
   	# pergola_rules.py -i ${batch_bg} -m  ${mapping_file_bG} -f bedGraph -w 3600 -nt -e  

@@ -10,9 +10,8 @@ If you have not install yet [docker](https://www.docker.com/) and [nextflow](htt
 Pull the Docker image use for processing data with Pergola (Pergola and its dependencies installed)
 
 ```
-docker pull pergola/pergola@sha256:829984c62ac8d8d129240f3db3e5de26be2379c4a6c76d871381101ad122569a
+docker pull pergola/pergola@sha256:8a52116be9bd371ae9bed9c0b36a8fc14634a7e14bbc764cc93905d8566e0939
 ```
-
 
 ### Clone the repository
 
@@ -20,6 +19,8 @@ docker pull pergola/pergola@sha256:829984c62ac8d8d129240f3db3e5de26be2379c4a6c76
 git clone --recursive https://github.com/JoseEspinosa/pergola-paper-reproduce.git
 cd pergola-paper-reproduce/cb1_mice
 ```
+
+**Note**: If you have previously download the repository, then you only need to go to the ``cb1_mice`` folder.
 
 ### Data
 
@@ -29,7 +30,7 @@ Data can be downloaded and uncompressed using the following command:
 
 ```
 mkdir data
-wget -O- https://zenodo.org/record/398779/files/CB1_mice.tar.gz | tar xz -C data
+wget -O- https://zenodo.org/record/580312/files/CB1_mice.tar.gz | tar xz -C data
 ```
 
 ### Run nextflow pipeline
@@ -54,18 +55,19 @@ wget -O- https://gist.githubusercontent.com/JoseEspinosa/9e65d54d765d9e5af554d83
 Pull the docker image containing the version of shiny-pergola web application used for render the data visualization:
 
 ```
-docker pull pergola/shiny-pergola@sha256:1c0928aae6950fb25c8521dd71df75a42170ce1c61a72b4dec42d52e7797ec41
+docker pull pergola/shiny-pergola@sha256:e8791c5f230b612a6f702ac397849163e3a52b923befd1977e4a4c0235e91f72
 ```
 
-Go to the folder containing the downloaded data and run the image:
+With docker running, launch the image:
 
 ```
-docker run --rm -p 80:80 -v "$(pwd)":/pergola_data  pergola/shiny-pergola@sha256:1c0928aae6950fb25c8521dd71df75a42170ce1c61a72b4dec42d52e7797ec41 &
+docker run --rm -p 80:80 -v "$(pwd)":/pergola_data  pergola/shiny-pergola@sha256:e8791c5f230b612a6f702ac397849163e3a52b923befd1977e4a4c0235e91f72 &
 ```
 
-**Note**: `"$(pwd)"` can be substitute by your absolute path to the folder where the files were downloaded.
+**Note**: `"$(pwd)"` can be substitute by your absolute path to the folder where the `CB1_mice-Pergola-Reproduce.nf` has been run .
+
 **Note**: Figure has several snapshots if you want to get exactly the exact the same figure just select it by setting on id.txt file. 
-For instance if you want to reproduce figure X a you just have to type the following command before running Docker shiny-pergola image.
+For instance if you want to reproduce figure **a** you just have to type the following command before running Docker shiny-pergola image.
 
 ```
 echo "cb1_a" > id.txt
@@ -74,11 +76,10 @@ echo "cb1_a" > id.txt
 Go to your web browser and type in your address bar the ip address returned by the following command e.g. http://192.168.99.100
 
 ```
-docker-machine ip default
+docker-machine ip default 
 ```
 
 Et voila, the running container will load the shiny app in your browser.
 
-TODO: Add image of the browser 
-
+<img src="/images/cb1_snapshot_shiny_pergola.png" alt="snapshot shiny-pergola" style="width: 100%;"/>
 
