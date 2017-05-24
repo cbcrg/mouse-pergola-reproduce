@@ -37,7 +37,7 @@ wget -O- https://zenodo.org/record/580312/files/CB1_mice.tar.gz | tar xz -C data
 Once data is downloaded, it is possible to reproduce all the results using this command:
 
 ```
-NXF_VER=0.24.1 ./CB1_mice-Pergola-Reproduce.nf --recordings='data/mice_recordings/*.csv' --mappings='data/mappings/b2p.txt' -with-docker
+NXF_VER=0.24.3 nextflow run CB1_mice-Pergola-Reproduce.nf --recordings='data/mice_recordings/*.csv' --mappings='data/mappings/b2p.txt' -with-docker
 ```
 
 ## Online visualization
