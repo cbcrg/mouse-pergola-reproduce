@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
-#  Copyright (c) 2014-2016, Centre for Genomic Regulation (CRG).
-#  Copyright (c) 2014-2016, Jose Espinosa-Carrasco and the respective authors.
+#  Copyright (c) 2014-2017, Centre for Genomic Regulation (CRG).
+#  Copyright (c) 2014-2017, Jose Espinosa-Carrasco and the respective authors.
 #
 #  This file is part of Pergola.
 #
@@ -30,8 +30,8 @@
 
 ##Loading libraries
 library ("ggplot2")
-library ("plotrix") #std.error
-library('extrafont')
+# library ("plotrix") #std.error
+# library('extrafont')
 library ('gtools') 
 library(dplyr)
 
@@ -99,12 +99,12 @@ names (argsL) <- argsDF$V1
 ## Loading parameters for plots
 source("https://gist.githubusercontent.com/JoseEspinosa/307430167b05e408ac071b8724701abf/raw/06b26f764953ceea53d334190d7b736308e5141d/param_plot_publication.R")
 
-# write(paste("Path to files: ", path2files, sep=""), stderr()) #del
 # path2files <- "/Users/jespinosa/git/pergola/examples/CB1_mice_tt/results_by_day/feeding_by_phases/sum/" #del
+pwd <- getwd()
 setwd(path2files)
-# stat <- 'sum' #del
-files <- list.files(pattern=paste("tr_.*.bed$", sep=""))
 
+files <- list.files(pattern=paste("tr_.*.bed$", sep=""))
+# stat<-"sum"
 data.frame_bed <- NULL
 
 for (bed_file in files) {
@@ -123,10 +123,15 @@ for (bed_file in files) {
   df$phenotype <- phenotype
   df$phenotype <- factor(df$phenotype, levels=c("wt_saline", "wt_nicotine", "KO_cb1_saline", "KO_cb1_nicotine"),
                          labels=c("wt_saline", "wt_nicotine", "KO_cb1_saline", "KO_cb1_nicotine"))
+#   df$phenotype <- factor(df$phenotype, levels=c("WT Saline", "WT Nicotine", "KO Saline", "KO Nicotine"),
+#                                                 labels=c("WT Saline", "WT Nicotine", "KO Saline", "KO Nicotine"))
+                                                  
   df$mouse <- mouse
   df$genotype <- genotype
   df$genotype <- factor(df$genotype, levels=c("wt", "KO"),
                        labels=c("wt", "KO"))
+#   df$genotype <- factor(df$genotype, levels=c("wt", "KO"),
+#                       labels=c("wt", "KO"))
   df$mouse <- mouse
   df$data_type <- data_type
   df$phase <- phase
@@ -134,6 +139,7 @@ for (bed_file in files) {
   df$group2plot <- paste (phase, data_type)
   data.frame_bed <- rbind(data.frame_bed, df)
 }
+setwd(pwd)
 
 ## animal 29 has not data for nicotine treatment
 ## 3799 chr1  0  1 no_hits  0  0     wt_saline    29        SC   day  Nicotine treatment     day SC
@@ -162,7 +168,6 @@ for (i in c(1:length (data.frame_bed$exp_phase))) {
   if (data.frame_bed [i,"V6"] == 0) {
     # If I have modified one day the rest are not anymore 0
     # I have to change by the median value in the rest of this day
-#     print (data.frame_bed [i,])
     data.frame_bed [i,"V6"] <- subset(means_no_zeros, genotype==data.frame_bed [i,"genotype"] &
                                       exp_phase==data.frame_bed [i,"exp_phase"] &
                                       data_type==data.frame_bed [i,"data_type"] &
@@ -172,28 +177,6 @@ for (i in c(1:length (data.frame_bed$exp_phase))) {
 
 ## delete the first 4 days of the nicotine tt -> injection
 data.frame_bed <- subset (data.frame_bed, V4!="day_15" & V4!="day_16" & V4!="day_17" & V4!="day_18")
-
-### Functions summary stats for plot
-## Returns mean and standard deviation
-mean_and_sd <- function(x) {
-  m <- mean(x)
-  sd_min <- m - sd(x)
-  sd_max <- m + sd(x)
-  return(c(y=m,ymin=sd_min,ymax=sd_max))
-}
-
-## Returns mean and standard error of the mean
-mean_and_se <- function(x) {
-  m <- mean(x)
-  se_min <- m - sd(x)/sqrt(length(x))
-  se_max <- m + sd(x)/sqrt(length(x))
-  return(c(y=m,ymin=se_min,ymax=se_max))
-}
-
-## Returns mean for crossbar
-mean_for_cross <- function(x) {
-  return(c(y=mean(x), ymin=mean(x), ymax=mean(x)))
-}
 
 ## color blind friendly palette
 {
@@ -226,23 +209,15 @@ font <- "Arial"
 
 name_file <- "plot"
 
-plot_title <- switch (stat, count=bouts_title, mean="Mean intake per feeding bout", median='Median intake per feeding bout', sum='Accumulated intake',
-                      max='Maximun intake', '')
-
-tbl_stat_mean <- with (data.frame_bed, aggregate (cbind (V6), list (phenotype=phenotype, data_type=data_type, phase=phase,
-                                                                    exp_phase=exp_phase),
-                                                  FUN=function (x) c (mean=mean(x), std.error=std.error(x))))
-
-tbl_stat_mean$mean <- tbl_stat_mean$V6 [,1]
-tbl_stat_mean$std.error <- tbl_stat_mean$V6 [,2]
-
+# plot_title <- switch (stat, count=bouts_title, mean="Mean intake per feeding bout", median='Median intake per feeding bout', sum='Accumulated intake',
+#                       max='Maximun intake', '')
+plot_title <- "Preference"
 ## Combined phases as in the original paper
 tbl_stat_mean_comb_ph <- with (data.frame_bed, aggregate (cbind (V6), list (phenotype=phenotype, data_type=data_type,
                                                                     exp_phase=exp_phase),
-                                                  FUN=function (x) c (mean=mean(x), std.error=std.error(x))))
+                                                  FUN=function (x) c (mean=mean(x))))
 
-tbl_stat_mean_comb_ph$mean <- tbl_stat_mean_comb_ph$V6 [,1]
-tbl_stat_mean_comb_ph$std.error <- tbl_stat_mean_comb_ph$V6 [,2]
+tbl_stat_mean_comb_ph$mean <- tbl_stat_mean_comb_ph$V6
 
 ######################
 # preference by animal
@@ -260,32 +235,31 @@ data.frame_bed_basal <- subset (data.frame_bed, exp_phase=="Basal")
       group_by(mouse, phenotype, exp_phase, phase,  V2, V3, data_type) %>%
       summarise(mean=mean(value)) %>%
       mutate(pref=mean/sum(mean)*100)
+
     preference <- as.data.frame(preference)
     preference <- preference[!is.na(preference$pref),]
 
     preference_mean_comb_ph <- with (preference, aggregate (cbind (pref), list (phenotype=phenotype, data_type=data_type,
                                                                                 exp_phase=exp_phase),
-                                                              FUN=function (x) c (mean=mean(x), std.error=std.error(x))))
+                                                              FUN=function (x) c (mean=mean(x))))
 
-    preference_mean_comb_ph$mean <- preference_mean_comb_ph$pref [,1]
-    preference_mean_comb_ph$std.error <- preference_mean_comb_ph$pref [,2]
+    preference_mean_comb_ph$mean <- preference_mean_comb_ph$pref
 
     ## basal period
     data.frame_bed_basal$value <- data.frame_bed_basal$V6
     preference_basal <- data.frame_bed_basal %>%
-      # they do in functin of the last one (data types)
+      # they do in function of the last one (data types)
       group_by(mouse, genotype, exp_phase, phase,  V2, V3, data_type) %>%
       summarise(mean=mean(value)) %>%
       mutate(pref=mean/sum(mean)*100)
-
+    
     preference_basal <- as.data.frame(preference_basal)
     preference_basal <- preference_basal[!is.na(preference_basal$pref),]
     preference_mean_comb_ph_basal <- with (preference_basal, aggregate (cbind (pref), list (genotype=genotype, data_type=data_type,
                                                                                 exp_phase=exp_phase),
-                                                            FUN=function (x) c (mean=mean(x), std.error=std.error(x))))
+                                                            FUN=function (x) c (mean=mean(x))))
 
-    preference_mean_comb_ph_basal$mean <- preference_mean_comb_ph_basal$pref [,1]
-    preference_mean_comb_ph_basal$std.error <- preference_mean_comb_ph_basal$pref [,2]
+    preference_mean_comb_ph_basal$mean <- preference_mean_comb_ph_basal$pref
 
     name_file <- paste ("preference", ".", "png", sep="")
 
@@ -294,20 +268,32 @@ data.frame_bed_basal <- subset (data.frame_bed, exp_phase=="Basal")
     colnames(preference_mean_comb_ph_basal)[1] <- "phenotype"
     preference_mean_comb_ph_plot <- rbind(preference_mean_comb_ph_basal, preference_mean_comb_ph)
 
-    ggplot(data=preference_mean_comb_ph_plot, aes(x=phenotype, y=mean, fill=data_type)) +
+    ggplot(data=preference_mean_comb_ph_plot, aes(x=phenotype, y=pref, fill=data_type)) +
       geom_bar(stat="identity", position="fill") +
       scale_fill_manual(values = c(cbb_palette[2], cbb_palette[1])) +
       scale_y_continuous (breaks=seq(0, 1,0.2)) +
       labs (title = paste(plot_title, "\n", sep="")) +
       labs (y = paste(paste ("Percentage", "\n", sep="")), x="\n") +
-      theme (plot.title = element_text(family=font, size=size_titles)) +
-      theme (axis.title.x = element_text(family=font, size=size_axis)) +
-      theme (axis.title.y = element_text(family=font, size=size_axis)) +
-      theme (axis.text.x = element_text(family=font, size=size_axis_ticks_x, angle=-90)) +
-      theme (axis.text.y = element_text(family=font, size=size_axis_ticks_y)) +
-      theme (axis.text.x = element_text(family=font, angle=-90, vjust=0.4,hjust=1)) +      
-      facet_wrap(~exp_phase, ncol=3, scale="free")
-      
+#       theme (plot.title = element_text(family=font, size=size_titles)) +
+#       theme (axis.title.x = element_text(family=font, size=size_axis)) +
+#       theme (axis.title.y = element_text(family=font, size=size_axis)) +
+#       theme (axis.text.x = element_text(family=font, size=size_axis_ticks_x, angle=90)) +
+#       theme (axis.text.y = element_text(family=font, size=size_axis_ticks_y)) +
+#       theme (axis.text.x = element_text(family=font, angle=90, vjust=0.4,hjust=1)) +
+      theme (plot.title = element_text(size=size_titles)) +
+      theme (axis.title.x = element_text(size=size_axis)) +
+      theme (axis.title.y = element_text(size=size_axis)) +
+      theme (axis.text.x = element_text(size=size_axis_ticks_x, angle=90)) +
+      theme (axis.text.y = element_text(size=size_axis_ticks_y)) +
+      theme (axis.text.x = element_text(angle=90, vjust=0.4,hjust=1)) +  
+      facet_wrap(~exp_phase, ncol=3, scale="free") +
+      scale_x_discrete(labels=c("WT", "KO", "WT Saline", "WT Nicotine", "KO Saline", "KO Nicotine", 
+                                "WT Saline", "WT Nicotine", "KO Saline", "KO Nicotine")) +
+      theme(strip.background = element_rect(fill="white")) +
+      theme(strip.text.x = element_text(size = size_axis_ticks_x), legend.title=element_blank())
+    
     ggsave (file=name_file, width=plot_width, height=plot_height, dpi=300)
+
   }
 }
+
