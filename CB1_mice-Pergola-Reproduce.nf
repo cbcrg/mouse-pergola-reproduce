@@ -36,6 +36,7 @@ log.info "mice recordings        : ${params.recordings}"
 log.info "mappings               : ${params.mappings}"
 log.info "experimental phases    : ${params.phases}"
 log.info "mappings phases        : ${params.mappings_phase}"
+log.info "experimental info      : ${params.exp_info}"
 log.info "output                 : ${params.output}"
 log.info "\n"
 
@@ -46,6 +47,7 @@ nextflow run CB1_mice-Pergola-Reproduce.nf \
   --mappings='small_data/mappings/b2p.txt' \
   --phases='small_data/mice_recordings/exp_phases.csv' \
   --mappings_phase='small_data/mappings/f2g.txt' \
+  --exp_info='small_data/mappings/exp_info.txt' \
   -with-docker
 */
     
@@ -57,6 +59,7 @@ mapping_file_bG = file(params.mappings)
 mapping_file_phase = file(params.mappings_phase)
 
 exp_phases = file(params.phases)
+exp_info = file(params.exp_info)
 
 /*
  * Input files validation
@@ -64,6 +67,7 @@ exp_phases = file(params.phases)
 if( !mapping_file.exists() ) exit 1, "Missing mapping file: ${mapping_file}"
 if( !mapping_file_phase.exists() ) exit 1, "Missing mapping phases file: ${mapping_file_phase}"
 if( !exp_phases.exists() ) exit 1, "Missing phases file: ${exp_phases}"
+if( !exp_info.exists() ) exit 1, "Missing experimental info file: ${exp_info}"
 
 /*
  * Create a channel for mice recordings 
@@ -84,7 +88,26 @@ Channel
     .fromPath( params.recordings )
     .set { mice_files_preference }
 
-//mice_files_preference.println()
+process stats_by_phase {
+
+  	input:
+  	file file_preferences from mice_files_preference
+  	file mapping_file
+    file mapping_file_phase
+    file exp_phases
+
+  	output:
+  	file 'stats_by_phase' into results_stats_by_phase
+  	stdout into max_time
+    file 'exp_phases' into exp_phases_bed, exp_phases_bed_to_wr
+
+  	"""
+  	mice_stats_by_phase.py -f "${file_preferences}"/intake*.csv -m ${mapping_file} -s "sum" -b feeding -p ${exp_phases} -mp ${mapping_file_phase}
+  	mkdir stats_by_phase
+  	cp exp_phases.bed exp_phases
+  	mv *.bed  stats_by_phase/
+  	"""
+}
 
 process convert_bed {
 
@@ -96,10 +119,14 @@ process convert_bed {
   	
   	output:   	
   	file 'tr*food*.bed' into bed_out
+  	file 'tr*{water,sac}*.bed' into bed_out_drink
   	file 'phases_dark.bed' into phases_dark
-  	
+    //file 'bed_to_viz' into bed_to_gviz
+
   	"""  
   	pergola_rules.py -i ${batch} -m  ${mapping_file} -f bed -nt -e
+  	#mkdir bed_to_viz
+  	#cp *.bed bed_to_viz
   	"""
 }
 
@@ -110,32 +137,18 @@ process convert_bedGraph {
   	input:
   	file ('batch_bg') from mice_files_bedGraph
   	file mapping_file_bG
-  	
+  	val max from max_time.first()
+
   	output:   	
   	file 'tr*food*.bedGraph' into bedGraph_out
+  	file 'tr*{water,sac}*.bedGraph' into bedGraph_out_drink
+  	//file 'bedg_to_viz' into bedg_to_gviz
   	
   	"""  
-  	# pergola_rules.py -i ${batch_bg} -m  ${mapping_file_bG} -f bedGraph -w 3600 -nt -e  
-  	pergola_rules.py -i ${batch_bg} -m  ${mapping_file_bG} -f bedGraph -w 1800 -nt -e 	
-  	"""
-}
-
-process stats_by_phase {
-
-  	input:
-  	set file_preferences from mice_files_preference
-  	file mapping_file
-    file mapping_file_phase
-    file exp_phases
-
-  	output:
-  	file 'stats_by_phase' into results_stats_by_phase
-    //set 'results_score', tag_group into results_bed_score, results_bed_score_2
-
-  	"""
-  	mice_stats_by_phase.py -f "${file_preferences}"/intake*.csv -m ${mapping_file} -s "sum" -b feeding -p ${exp_phases} -mp ${mapping_file_phase}
-  	mkdir stats_by_phase
-  	mv *.bed  stats_by_phase/
+  	# pergola_rules.py -i ${batch_bg} -m  ${mapping_file_bG} -max ${max} -f bedGraph -w 3600 -nt -e
+  	pergola_rules.py -i ${batch_bg} -m ${mapping_file_bG} -max ${max} -f bedGraph -w 1800 -nt -e
+  	#mkdir bedg_to_viz
+  	#cp *.bedGraph bedg_to_viz
   	"""
 }
 
@@ -151,6 +164,29 @@ process plot_preference {
 
   	"""
     plot_preference.R --stat="sum" --path2files=${stats_by_phase}
-    #--path2plot="/Users/jespinosa/git/pergola-paper-reproduce/cb1_mice/bin/results/"
+  	"""
+}
+
+
+exp_phases_bed_to_wr.subscribe {
+    it.copyTo( "files/exp_phases.bed" )
+}
+
+process gviz_visualization {
+
+    publishDir = [path: "plot", mode: 'copy', overwrite: 'true']
+
+    input:
+
+    file 'exp_info' from exp_info
+    file 'bed_dir/*' from bed_out.collect()
+    file 'bedgr_dir/*' from bedGraph_out.collect()
+    file exp_phases_bed from exp_phases_bed
+
+    output:
+    file '*.tiff' into gviz
+
+  	"""
+    mice_gviz_visualization.R --f_experiment_info=${exp_info} --path_bed_files=bed_dir --path_to_bedGraph_files=bedgr_dir --path_to_phases_file=${exp_phases_bed}
   	"""
 }

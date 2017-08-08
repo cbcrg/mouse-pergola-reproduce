@@ -25,15 +25,12 @@
 ### phases or other phases                                                ###
 #############################################################################
 
-##Getting HOME directory
-# home <- Sys.getenv("HOME") #del
-
 ##Loading libraries
 library ("ggplot2")
 # library ("plotrix") #std.error
-# library('extrafont')
-library ('gtools') 
-library(dplyr)
+library("extrafont")
+library ("gtools") 
+library("dplyr")
 
 #####################
 ### VARIABLES
@@ -122,16 +119,10 @@ for (bed_file in files) {
   exp_phase <- gsub ("tr_", "", unlist(strsplit(bed_file, split=".",fixed=T))[5])
   df$phenotype <- phenotype
   df$phenotype <- factor(df$phenotype, levels=c("wt_saline", "wt_nicotine", "KO_cb1_saline", "KO_cb1_nicotine"),
-                         labels=c("wt_saline", "wt_nicotine", "KO_cb1_saline", "KO_cb1_nicotine"))
-#   df$phenotype <- factor(df$phenotype, levels=c("WT Saline", "WT Nicotine", "KO Saline", "KO Nicotine"),
-#                                                 labels=c("WT Saline", "WT Nicotine", "KO Saline", "KO Nicotine"))
-                                                  
+                         labels=c("wt_saline", "wt_nicotine", "KO_cb1_saline", "KO_cb1_nicotine"))                                                  
   df$mouse <- mouse
   df$genotype <- genotype
-  df$genotype <- factor(df$genotype, levels=c("wt", "KO"),
-                       labels=c("wt", "KO"))
-#   df$genotype <- factor(df$genotype, levels=c("wt", "KO"),
-#                       labels=c("wt", "KO"))
+  df$genotype <- factor(df$genotype, levels=c("wt", "KO"), labels=c("wt", "KO"))
   df$mouse <- mouse
   df$data_type <- data_type
   df$phase <- phase
@@ -260,35 +251,31 @@ data.frame_bed_basal <- subset (data.frame_bed, exp_phase=="Basal")
                                                             FUN=function (x) c (mean=mean(x))))
 
     preference_mean_comb_ph_basal$mean <- preference_mean_comb_ph_basal$pref
-
     name_file <- paste ("preference", ".", "png", sep="")
 
     ## Join the two tables
     preference_mean_comb_ph <- subset (preference_mean_comb_ph, exp_phase!="Basal")
     colnames(preference_mean_comb_ph_basal)[1] <- "phenotype"
     preference_mean_comb_ph_plot <- rbind(preference_mean_comb_ph_basal, preference_mean_comb_ph)
-
+    
+    ## Changing labels and reordering phenotypes for plotting
+    phenotype <- as.factor(gsub("cb1 ", "", gsub("wt", "WT", gsub("_", " ", preference_mean_comb_ph_plot$phenotype))))
+    phenotype <- ordered(phenotype, levels = c("WT","KO", "WT saline", "WT nicotine", "KO saline", "KO nicotine"))
+    preference_mean_comb_ph_plot$phenotype <- phenotype
+       
     ggplot(data=preference_mean_comb_ph_plot, aes(x=phenotype, y=pref, fill=data_type)) +
       geom_bar(stat="identity", position="fill") +
       scale_fill_manual(values = c(cbb_palette[2], cbb_palette[1])) +
       scale_y_continuous (breaks=seq(0, 1,0.2)) +
       labs (title = paste(plot_title, "\n", sep="")) +
       labs (y = paste(paste ("Percentage", "\n", sep="")), x="\n") +
-#       theme (plot.title = element_text(family=font, size=size_titles)) +
-#       theme (axis.title.x = element_text(family=font, size=size_axis)) +
-#       theme (axis.title.y = element_text(family=font, size=size_axis)) +
-#       theme (axis.text.x = element_text(family=font, size=size_axis_ticks_x, angle=90)) +
-#       theme (axis.text.y = element_text(family=font, size=size_axis_ticks_y)) +
-#       theme (axis.text.x = element_text(family=font, angle=90, vjust=0.4,hjust=1)) +
-      theme (plot.title = element_text(size=size_titles)) +
-      theme (axis.title.x = element_text(size=size_axis)) +
-      theme (axis.title.y = element_text(size=size_axis)) +
-      theme (axis.text.x = element_text(size=size_axis_ticks_x, angle=90)) +
-      theme (axis.text.y = element_text(size=size_axis_ticks_y)) +
-      theme (axis.text.x = element_text(angle=90, vjust=0.4,hjust=1)) +  
+      theme (plot.title = element_text(family=font, size=size_titles)) +
+      theme (axis.title.x = element_text(family=font, size=size_axis)) +
+      theme (axis.title.y = element_text(family=font, size=size_axis)) +
+      theme (axis.text.x = element_text(family=font, size=size_axis_ticks_x, angle=90)) +
+      theme (axis.text.y = element_text(family=font, size=size_axis_ticks_y)) +
+      theme (axis.text.x = element_text(family=font, angle=90, vjust=0.4,hjust=1)) +  
       facet_wrap(~exp_phase, ncol=3, scale="free") +
-      scale_x_discrete(labels=c("WT", "KO", "WT Saline", "WT Nicotine", "KO Saline", "KO Nicotine", 
-                                "WT Saline", "WT Nicotine", "KO Saline", "KO Nicotine")) +
       theme(strip.background = element_rect(fill="white")) +
       theme(strip.text.x = element_text(size = size_axis_ticks_x), legend.title=element_blank())
     

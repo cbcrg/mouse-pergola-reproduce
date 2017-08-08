@@ -31,7 +31,7 @@
 from argparse import ArgumentParser, FileType
 from os import path, getcwd, makedirs, chdir
 from shutil import rmtree
-from sys import stderr
+from sys import stderr, stdout
 import subprocess
 import pybedtools
 from pergola import mapping
@@ -97,10 +97,12 @@ for f in args.file_mice_behavior:
     else:
         data_read_all_batches = tracks.merge_tracks(data_read_all_batches, data_read)
 
+stdout.write(str(end_time))
+
 list_wt_sal = [1,3,5,13,15,17,25,27,29,37,39,41]
-list_wt_nic = [7,9,11,19,21,23,31,33,35,43,45,47]
+list_wt_nic = [7,9,11,19,21,23,31,33,35,43,45,47,48]
 list_KO_cb1_sal = [6,8,10,18,20,22,30,32,34,42,44,46]
-list_KO_cb1_nic = [2,4,12,14,16,24,26,28,36,38,40,48]
+list_KO_cb1_nic = [2,4,12,14,16,24,26,28,36,38,40]
 
 bed_dict = dict()
 
