@@ -126,10 +126,6 @@ names (argsL) <- argsDF$V1
 
 #############################
 ## Read files bedGraph files
-
-# base_dir <- "/Users/jespinosa/git/pergola-paper-reproduce/cb1_mice/small_data/mappings"
-# exp_design_f <- "exp_info.txt"
-# b2v <- exp_info <- read.table(file.path(base_dir, exp_design_f), header = TRUE, stringsAsFactors=FALSE)
 b2v <- exp_info <- read.table(file.path(experiment_info), header = TRUE, stringsAsFactors=FALSE)
 exp_info$condition <- as.factor(exp_info$condition)
 exp_info$condition <- ordered(exp_info$condition, levels = c("WT_food_sc",
@@ -141,11 +137,7 @@ exp_info$condition <- ordered(exp_info$condition, levels = c("WT_food_sc",
                                                              "CB1_food_fat",                                                             
                                                              "CB1_nic_food_fat"))
 b2v <- exp_info
-# b2v$condition <- gsub("_", " ", exp_info$condition)
 
-# base_dir <- "/Users/jespinosa/git/pergola-paper-reproduce/cb1_mice/"
-# data_dir <- file.path(base_dir, "files")
-# bed_dir <- file.path(data_dir)
 bed_dir <- file.path(path_bed_files)
 
 {
@@ -155,14 +147,10 @@ bed_dir <- file.path(path_bed_files)
 
 perg_bed_files <- sapply(exp_info$sample, function(id) file.path(bed_dir, paste(id, ".bed", sep="")))
 
-# exp_info <- read.table(file.path(base_dir, "exp_info.txt"), header = TRUE, stringsAsFactors=FALSE)
 b2v <- dplyr::mutate(b2v, path = perg_bed_files, header = TRUE, stringsAsFactors=FALSE)
-
 bedg_dir <- file.path(path_bedG_files)
-# perg_bedg_files <- sapply(exp_info$sample, function(id) file.path(data_dir, paste(id, ".bedGraph", sep="")))
 perg_bedg_files <- sapply(exp_info$sample, function(id) file.path(bedg_dir, paste(id, ".bedGraph", sep="")))
 
-# bg2v <- exp_info <- read.table(file.path(base_dir, exp_design_f), header = TRUE, stringsAsFactors=FALSE)
 bg2v<-b2v
 bg2v <- dplyr::mutate(bg2v, path = perg_bedg_files)
 
@@ -177,8 +165,7 @@ l_gr_color <- mapply(function(x, col) list(col),
 
 bed2pergViz <- function (data_df, gr_df, format_f="BED") {
   grps <- as.character(gr_df[[setdiff(colnames(gr_df), 'sample')]])
-#   r <- lapply(unique(grps),
-  r <- lapply(levels(exp_info$condition),
+  r <- lapply(unique(grps),
               function(g) {
                 gr_samps <- grps %in% g
                 gr_files <- data_df$path[gr_samps]
@@ -232,7 +219,9 @@ max_heatmap <- 0.5
 color_min <- 'white'
 color_max <- 'blue'
 
-# l_gr_data_tr_bg_tmp <- lapply (seq_along(l_granges_bg), function (i_group_exp) {
+# to make the order equal in both panels it should be reorder before applying colors (numeric ordering)
+l_granges_bg <- l_granges_bg[levels(exp_info$condition)]
+
 l_gr_data_tr_bg <- lapply (seq_along(l_granges_bg), function (i_group_exp) {
   lapply (seq_along (l_granges_bg[[i_group_exp]]),  function (i_track) {                                                     
     granges_obj <-l_granges_bg[[i_group_exp]][[i_track]]
@@ -249,7 +238,7 @@ l_gr_data_tr_bg <- lapply (seq_along(l_granges_bg), function (i_group_exp) {
 
 names (l_gr_data_tr_bg) <- names(l_granges_bg)
 
-# reorder groups
+## reorder groups
 l_gr_annotation_tr_bed <- l_gr_annotation_tr_bed[levels(exp_info$condition)]
 l_gr_data_tr_bg <- l_gr_data_tr_bg [levels(exp_info$condition)]
 
@@ -260,8 +249,8 @@ g_tr <- GenomeAxisTrack()
 ## creating a legend
 x <- runif(length(unique(exp_info$condition)),0,100)
 y <- runif(length(unique(exp_info$condition)),100,200)
-df_legend <- data.frame(x, y, gsub("_", " ", unique(exp_info$condition)))
 # df_legend <- data.frame(x, y, ordered(df_legend$names, levels = levels(exp_info$condition)))
+df_legend <- data.frame(x, y, gsub("_", " ", unique(exp_info$condition)))
 colnames(df_legend) <- c("x", "y", "names")
 df_legend$names <- ordered(gsub("_", " ", df_legend$names), levels = gsub("_", " ", levels(exp_info$condition)))
 color_by_tr <- unlist(l_gr_color[levels(exp_info$condition)])
@@ -275,11 +264,26 @@ size_box_leg <- 5
 plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, colour = names), shape=15, size=size_box_leg) +
                 scale_colour_manual (values=color_by_tr) + 
                 guides(color=guide_legend(title=NULL)) + 
-                theme(legend.position="bottom", legend.justification=c(1, 0), 
+                theme(legend.position="bottom", legend.justification=c(0, 0), 
                       legend.text=element_text(size=size_text_leg),
                       legend.key = element_rect(fill = "white", colour = "white")) + 
                 geom_blank()
-plot_legends
+
+## Adding heatmap scale to the legend
+bedGraphRange <- c(0,0.5)
+plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, fill = 0)) +
+  scale_fill_gradientn (guide = "colorbar",
+                        colours = c(color_min, color_max),
+                        values = c(bedGraphRange[1], bedGraphRange[2]),
+                        limits = c(bedGraphRange[1], bedGraphRange[2]),
+                        breaks   = c(bedGraphRange[1], bedGraphRange[2]),
+                        labels = c(bedGraphRange[1], paste(bedGraphRange[2],"    ", sep="")),
+                        name = "",
+                        rescaler = function(x,...) x,                                        
+                        oob = identity) + theme (legend.position = "none") + 
+  theme(legend.position="bottom", legend.justification=c(1,0), legend.text=element_text(size=size_text_leg)) +
+  geom_blank()  
+
 ## Extract Legend 
 g_legend <- function(a.gplot){ 
   tmp <- ggplot_gtable(ggplot_build(a.gplot)) 
@@ -312,13 +316,3 @@ p <- plotTracks(c(g_tr, unlist(l_gr_annotation_tr_bed), unlist(l_gr_data_tr_bg),
            fontsize=size_labels, cex=cex_gtrack)
 grid.draw (leg_groups)
 dev.off()
-
-# names(unlist(l_gr_annotation_tr_bed))
-# png(name_file, width = 2000 , height = 5000, res=200)
-# p <- plotTracks(c(g_tr, unlist(l_gr_annotation_tr_bed),  phases_tr, unlist(ctracks)),
-#                 from=0, to=1000, 
-#                 ylim=c(0, 0.5),                                                     
-#                 shape = "box", stacking = "dense",
-#                 fontsize=size_labels, cex=cex_gtrack)
-# grid.draw (leg_groups)
-# dev.off()

@@ -50,7 +50,7 @@ NXF_VER=0.24.3 nextflow run CB1_mice-Pergola-Reproduce.nf \
 Download the configuration files assigning files to each of the group (wt_food_sc, wt_food_fat, cb1_food_sc, cb1_food_fat)
 
 ```bash
-wget -O- https://gist.githubusercontent.com/JoseEspinosa/9e65d54d765d9e5af554d837b3427569/raw/b686558fcd076dcc5fb711553203f5fa5f133bf0/cb1_pergola_conf.txt > exp_info.txt
+wget -O-  https://gist.githubusercontent.com/JoseEspinosa/9e65d54d765d9e5af554d837b3427569/raw/48fb424fb367c570461e7e6c8226abf81ead8ee2/cb1_pergola_conf.txt > exp_info.txt
 ```
 
 ### Downloading and running the shiny-pergola image
