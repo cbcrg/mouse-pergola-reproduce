@@ -47,7 +47,7 @@ nextflow run CB1_mice-Pergola-Reproduce.nf \
   --mappings='small_data/mappings/b2p.txt' \
   --phases='small_data/mice_recordings/exp_phases.csv' \
   --mappings_phase='small_data/mappings/f2g.txt' \
-  --exp_info='small_data/mappings/exp_info.txt' \
+  --exp_info='small_data/mappings/exp_info_small.txt' \
   -with-docker
 */
     
@@ -99,12 +99,14 @@ process stats_by_phase {
   	output:
   	file 'stats_by_phase' into results_stats_by_phase
   	stdout into max_time
-    file 'exp_phases' into exp_phases_bed, exp_phases_bed_to_wr
+    file 'exp_phases' into exp_phases_bed_gviz, exp_phases_bed_to_wr
+    file 'exp_phases_sushi' into exp_phases_bed_sushi
 
   	"""
   	mice_stats_by_phase.py -f "${file_preferences}"/intake*.csv -m ${mapping_file} -s "sum" -b feeding -p ${exp_phases} -mp ${mapping_file_phase}
   	mkdir stats_by_phase
   	cp exp_phases.bed exp_phases
+  	tail +2 exp_phases > exp_phases_sushi
   	mv *.bed  stats_by_phase/
   	"""
 }
@@ -172,6 +174,9 @@ exp_phases_bed_to_wr.subscribe {
     it.copyTo( "files/exp_phases.bed" )
 }
 
+bed_out.into { bed_out_gviz; bed_out_sushi }
+bedGraph_out.into { bedGraph_out_gviz; bedGraph_out_sushi }
+
 process gviz_visualization {
 
     publishDir = [path: "plot", mode: 'copy', overwrite: 'true']
@@ -179,9 +184,9 @@ process gviz_visualization {
     input:
 
     file 'exp_info' from exp_info
-    file 'bed_dir/*' from bed_out.collect()
-    file 'bedgr_dir/*' from bedGraph_out.collect()
-    file exp_phases_bed from exp_phases_bed
+    file 'bed_dir/*' from bed_out_gviz.collect()
+    file 'bedgr_dir/*' from bedGraph_out_gviz.collect()
+    file exp_phases_bed from exp_phases_bed_gviz
 
     output:
     file '*.tiff' into gviz
@@ -189,4 +194,24 @@ process gviz_visualization {
   	"""
     mice_gviz_visualization.R --f_experiment_info=${exp_info} --path_bed_files=bed_dir --path_to_bedGraph_files=bedgr_dir --path_to_phases_file=${exp_phases_bed}
   	"""
+}
+
+process sushi_visualization {
+
+    publishDir = [path: "plot", mode: 'copy', overwrite: 'true']
+
+    input:
+
+    file 'exp_info' from exp_info
+    file 'bed_dir/*' from bed_out_sushi.collect()
+    file 'bedgr_dir/*' from bedGraph_out_sushi.collect()
+    file exp_phases_bed from exp_phases_bed_sushi
+
+    output:
+    file '*.pdf' into sushi
+
+  	"""
+    mice_sushi_visualization.R --f_experiment_info=${exp_info} --path_bed_files=bed_dir --path_to_bedGraph_files=bedgr_dir --path_to_phases_file=${exp_phases_bed}
+  	"""
+
 }

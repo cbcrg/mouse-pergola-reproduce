@@ -20,8 +20,7 @@
 #############################################################################
 ### Jose Espinosa-Carrasco NPMMD/CB-CRG Group. Aug 2017                   ###
 #############################################################################
-### Mean values for each group of worms                                   ###
-### Using bed files raw data intercepted with the motion                  ###
+### Mice data set visualization using Gviz                                ###
 #############################################################################
 
 ##Getting HOME directory
