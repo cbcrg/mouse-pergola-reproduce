@@ -127,14 +127,14 @@ names (argsL) <- argsDF$V1
 ## Read files bedGraph files
 b2v <- exp_info <- read.table(file.path(experiment_info), header = TRUE, stringsAsFactors=FALSE)
 exp_info$condition <- as.factor(exp_info$condition)
-exp_info$condition <- ordered(exp_info$condition, levels = c("WT_food_sc",
-                                                             "WT_nic_food_sc", 
-                                                             "CB1_food_sc", 
-                                                             "CB1_nic_food_sc",
-                                                             "WT_food_fat",
-                                                             "WT_nic_food_fat",
-                                                             "CB1_food_fat",                                                             
-                                                             "CB1_nic_food_fat"))
+exp_info$condition <- ordered(exp_info$condition, levels = c("WT food sc",
+                                                             "WT nic food sc",
+                                                             "CB1 food sc",
+                                                             "CB1 nic food sc",
+                                                             "WT food fat",
+                                                             "WT nic food fat",
+                                                             "CB1 food fat",
+                                                             "CB1 nic food fat"))
 b2v <- exp_info
 
 bed_dir <- file.path(path_bed_files)

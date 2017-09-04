@@ -1,9 +1,9 @@
 sample	condition
-tr_1_dt_food_sc	WT_food_sc
-tr_13_dt_food_sc	WT_food_sc
-tr_25_dt_food_sc	WT_food_sc
-tr_37_dt_food_sc	WT_food_sc
-tr_1_dt_food_fat	WT_food_fat
-tr_13_dt_food_fat	WT_food_fat
-tr_25_dt_food_fat	WT_food_fat
-tr_37_dt_food_fat	WT_food_fat
+tr_1_dt_food_sc	"WT food sc"
+tr_13_dt_food_sc	"WT food sc"
+tr_25_dt_food_sc	"WT food sc"
+tr_37_dt_food_sc	"WT food sc"
+tr_1_dt_food_fat	"WT food fat"
+tr_13_dt_food_fat	"WT food fat"
+tr_25_dt_food_fat	"WT food fat"
+tr_37_dt_food_fat	"WT food fat"

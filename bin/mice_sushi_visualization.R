@@ -125,17 +125,23 @@ color_heatmap <- 'blue'
 
 #############################
 ## Read files bed files
+# experiment_info <- "/Users/jespinosa/git/pergola-paper-reproduce/cb1_mice/exp_info.txt" #del
 b2v <- exp_info <- read.table(file.path(experiment_info), header = TRUE, stringsAsFactors=FALSE)
 exp_info$condition <- as.factor(exp_info$condition)
-exp_info$condition <- ordered(exp_info$condition, levels = c("WT_food_sc",
-                                                             "WT_nic_food_sc", 
-                                                             "CB1_food_sc", 
-                                                             "CB1_nic_food_sc",
-                                                             "WT_food_fat",
-                                                             "WT_nic_food_fat",
-                                                             "CB1_food_fat",                                                             
-                                                             "CB1_nic_food_fat"))
+exp_info$condition <- ordered(exp_info$condition, levels = c("WT food sc",
+                                                             "WT nic food sc", 
+                                                             "CB1 food sc", 
+                                                             "CB1 nic food sc",
+                                                             "WT food fat",
+                                                             "WT nic food fat",
+                                                             "CB1 food fat",                                                             
+                                                             "CB1 nic food fat"))
 b2v <- exp_info
+
+# Reorder by group to make all tracks of a same group to appear together
+exp_info <- exp_info[order(exp_info$condition),]
+
+# path_bed_files <- "/Users/jespinosa/scratch/0a/4bfed76ab7d32e001ac380fdf88837/bed_dir" #del
 
 bed_dir <- file.path(path_bed_files)
 
@@ -165,9 +171,13 @@ data_bed_events <- lapply(b2v$path, function (bed) {
     
     return (bed_tbl)
 })
+# l_gr_color #del
+# levels(exp_info$condition)
+# names(data_bed_events)
 
 #############################
 ## Read files bedGraph files
+# path_bedG_files <- "/Users/jespinosa/scratch/0a/4bfed76ab7d32e001ac380fdf88837/bedg_dir" #del
 bedg_dir <- file.path(path_bedG_files)
 perg_bedg_files <- sapply(exp_info$sample, function(id) file.path(bedg_dir, paste(id, ".bedGraph", sep="")))
 
@@ -189,12 +199,12 @@ data_bedg_win <- lapply(bg2v$path, function (bedg) {
 })
 
 ## I set max_value to 0.5 to make the representation like in the Gviz case
-max_value <- 0.5
+max_value <- 4
 
 ## standardize values to a range of 0 to 1
 unite_scale <- function (v, min=0, max=0.5) {    
-    if (v > max) {return (1)}
-    return ((v - min) / (max - min))
+    ifelse(v > max, return(1), return ((v - min) / (max - min)))
+    
 }
 
 # parameters for sushi
@@ -205,6 +215,7 @@ chromend         = 3635631
 
 ###########################################
 ## Read files bed phases files if available
+# phases_file <- "/Users/jespinosa/scratch/80/830f65cd39c3f6ae13d493c7e7ed11/exp_phases_sushi" #del
 {
     if (!is.null (phases_file)) {
         bed_phases <- read.csv(file=phases_file, header=FALSE, sep="\t", stringsAsFactors=FALSE)
@@ -215,16 +226,17 @@ chromend         = 3635631
 }
 
 ## Plot
-pdf(paste("mice_sushi_viz", ".pdf", sep=""))
+pdf(paste("mice_sushi_viz", ".pdf", sep=""), height=14, width=30)
 
 split.screen (c(2, 1)) 
 
 ## adding a n empty plots for title
 n=3
+size_lab <- 0.3
 # split.screen(c(length(data_bedg_win)+n, 1), screen = 1)
 # split.screen(c(length(data_bed_events)+length(data_bedg_win)+n, 1), screen = 1)
 split.screen(c(length(data_bed_events) + n, 1), screen = 1)
-split.screen(c(length(data_bedg_win) + n, 1), screen = 2)
+split.screen(c(length(data_bedg_win) + n + n * 4, 1), screen = 2)
 
 screen(1)
 
@@ -244,7 +256,7 @@ for (bed_i in seq_along(data_bed_events)) {
             row='supplied', color=data_bed_events[[bed_i]]$color[1])
     
     axis(side=2, lwd.tick=0, labels=FALSE, col=data_bed_events[[bed_i]]$color[1])
-    mtext(data_bed_events[[bed_i]]$id[1], side=2, cex=0.5, col=data_bed_events[[bed_i]]$color[1])
+    mtext(data_bed_events[[bed_i]]$id[1], side=2, cex=size_lab, las=1, col=data_bed_events[[bed_i]]$color[1])
     
     i=i+1
 }
@@ -261,7 +273,7 @@ for (bedg_i in seq_along(data_bedg_win)) {
    
     axis(side=2, lwd.tick=0, labels=FALSE, col=data_bed_events[[bedg_i]]$color[1])
 
-    mtext(data_bed_events[[bedg_i]]$id[1], side=2, cex=0.5, col=data_bed_events[[bedg_i]]$color[1])
+    mtext(data_bed_events[[bedg_i]]$id[1], side=2, cex=size_lab, las=1, col=data_bed_events[[bedg_i]]$color[1])
 
     i=i+1
     j=j+1
@@ -270,7 +282,7 @@ for (bedg_i in seq_along(data_bedg_win)) {
 screen(i)
 par(mar=c(0.1, 2, 0.1, 2))
 plotBed(bed_phases, chrom, chromstart, chromend, row='supplied')
-mtext("Phases", side=2, cex=0.5, col="black")
+mtext("Phases", side=2, cex=size_lab, col="black", las=1)
 
 min_heatmap <- 0
 max_heatmap <- max_value
@@ -299,7 +311,7 @@ plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, colour =
     geom_blank()
 
 ## Adding heatmap scale to the legend
-bedGraphRange <- c(0, 0.5)
+bedGraphRange <- c(0, max_value)
 plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, fill = 0)) +
     scale_fill_gradientn (guide = "colorbar",
                           colours = c(color_min, color_max),

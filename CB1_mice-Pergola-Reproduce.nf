@@ -45,6 +45,7 @@ log.info "\n"
 nextflow run CB1_mice-Pergola-Reproduce.nf \
   --recordings='small_data/mice_recordings/' \
   --mappings='small_data/mappings/b2p.txt' \
+  --mappings_bed='small_data/mappings/bed2pergola.txt' \
   --phases='small_data/mice_recordings/exp_phases.csv' \
   --mappings_phase='small_data/mappings/f2g.txt' \
   --exp_info='small_data/mappings/exp_info_small.txt' \
@@ -55,6 +56,7 @@ nextflow run CB1_mice-Pergola-Reproduce.nf \
  * Input parameters validation
  */
 mapping_file = file(params.mappings)
+mapping_bed_file = file(params.mappings_bed)
 mapping_file_bG = file(params.mappings)
 mapping_file_phase = file(params.mappings_phase)
 
@@ -118,17 +120,24 @@ process convert_bed {
   	input:
   	file ('batch') from mice_files_bed
   	file mapping_file
+  	file mapping_bed_file
   	
   	output:   	
   	file 'tr*food*.bed' into bed_out
   	file 'tr*{water,sac}*.bed' into bed_out_drink
   	file 'phases_dark.bed' into phases_dark
-    //file 'bed_to_viz' into bed_to_gviz
 
-  	"""  
-  	pergola_rules.py -i ${batch} -m  ${mapping_file} -f bed -nt -e
-  	#mkdir bed_to_viz
-  	#cp *.bed bed_to_viz
+  	"""
+  	pergola_rules.py -i ${batch} -m ${mapping_file} -f bed -nt -e
+
+    shopt -s nullglob
+
+  	for f in tr_{1,3,5,13,15,17,25,27,29,37,39,41}*
+  	do
+  	    echo -e "food_sc\tblack" > dict_color
+  	    echo -e "food_fat\torange" >> dict_color
+  	    pergola_rules.py -i \${f} -m ${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color'
+  	done
   	"""
 }
 
@@ -174,8 +183,292 @@ exp_phases_bed_to_wr.subscribe {
     it.copyTo( "files/exp_phases.bed" )
 }
 
-bed_out.into { bed_out_gviz; bed_out_sushi }
+bed_out.into { bed_out_gviz; bed_out_sushi; bed_out_igv }
 bedGraph_out.into { bedGraph_out_gviz; bedGraph_out_sushi }
+
+def wt = [1,3,5,13,15,17,25,27,29,37,39,41]
+def wt_nic = [7,9,11,19,21,23,31,33,35,43,45,47,48]
+def cb1 = [6,8,10,18,20,22,30,32,34,42,44,46]
+def cb1_nic = [2,4,12,14,16,24,26,28,36,38,40]
+
+
+def map_id_group = [ "wt" : [1,3,5,13,15,17,25,27,29,37,39,41],
+                     "wt_nic" : [7,9,11,19,21,23,31,33,35,43,45,47,48],
+                     "cb1" : [6,8,10,18,20,22,30,32,34,42,44,46],
+                     "cb1_nic" : [2,4,12,14,16,24,26,28,36,38,40] ]
+
+////////////////////////////
+bed_out_igv.into { bed_out_wt; bed_out_wt_nic; bed_out_cb1; bed_out_cb1_nic; bed_out_wt_fat; bed_out_wt_nic_fat; bed_out_cb1_fat; bed_out_cb1_nic_fat }
+
+result_dir_wt_food_sc = file("$params.output/1_wt_food_sc")
+result_dir_wt_nic_food_sc = file("$params.output/2_wt_nic_food_sc")
+result_dir_cb1_food_sc = file("$params.output/3_cb1_food_sc")
+result_dir_cb1_nic_food_sc = file("$params.output/4_cb1_nic_food_sc")
+result_dir_wt_food_fat = file("$params.output/5_wt_food_fat")
+result_dir_wt_nic_food_fat = file("$params.output/6_wt_nic_food_fat")
+result_dir_cb1_food_fat = file("$params.output/7_cb1_food_fat")
+result_dir_cb1_nic_food_fat = file("$params.output/8_cb1_nic_food_fat")
+
+result_dir_wt_food_sc.with {
+    if( !empty() ) { deleteDir() }
+    mkdirs()
+    println "Created: $result_dir_wt_food_sc"
+}
+
+result_dir_wt_food_fat.with {
+    if( !empty() ) { deleteDir() }
+    mkdirs()
+    println "Created: $result_dir_wt_food_fat"
+}
+
+result_dir_wt_nic_food_sc.with {
+    if( !empty() ) { deleteDir() }
+    mkdirs()
+    println "Created: $result_dir_wt_nic_food_sc"
+}
+
+result_dir_wt_nic_food_fat.with {
+    if( !empty() ) { deleteDir() }
+    mkdirs()
+    println "Created: $result_dir_wt_nic_food_fat"
+}
+
+result_dir_cb1_food_sc.with {
+    if( !empty() ) { deleteDir() }
+    mkdirs()
+    println "Created: $result_dir_cb1_food_sc"
+}
+
+result_dir_cb1_food_fat.with {
+    if( !empty() ) { deleteDir() }
+    mkdirs()
+    println "Created: $result_dir_cb1_food_fat"
+}
+
+result_dir_cb1_nic_food_sc.with {
+    if( !empty() ) { deleteDir() }
+    mkdirs()
+    println "Created: $result_dir_cb1_nic_food_sc"
+}
+
+result_dir_cb1_nic_food_fat.with {
+    if( !empty() ) { deleteDir() }
+    mkdirs()
+    println "Created: $result_dir_cb1_nic_food_fat"
+}
+
+bed_out_wt.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
+    //println (it.name)
+    wt.contains(id.toInteger()) && food == "sc"
+}.subscribe {
+    it.copyTo( result_dir_wt_food_sc.resolve ( it.name ) )
+}
+
+bed_out_wt_nic.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
+    //println (it.name)
+    wt_nic.contains(id.toInteger()) && food == "sc"
+}.subscribe {
+    it.copyTo( result_dir_wt_nic_food_sc.resolve ( it.name ) )
+}
+
+bed_out_cb1.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
+    //println (it.name)
+    cb1.contains(id.toInteger()) && food == "sc"
+}.subscribe {
+    it.copyTo( result_dir_cb1_food_sc.resolve ( it.name ) )
+}
+
+bed_out_cb1_nic.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
+    //println (it.name)
+    cb1_nic.contains(id.toInteger()) && food == "sc"
+}.subscribe {
+    it.copyTo( result_dir_cb1_nic_food_sc.resolve ( it.name ) )
+}
+
+bed_out_wt_fat.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
+    //println (it.name)
+    wt.contains(id.toInteger()) && food == "fat"
+}.subscribe {
+    it.copyTo( result_dir_wt_food_fat.resolve ( it.name ) )
+}
+
+bed_out_wt_nic_fat.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
+    //println (it.name)
+    wt_nic.contains(id.toInteger()) && food == "fat"
+}.subscribe {
+    it.copyTo( result_dir_wt_nic_food_fat.resolve ( it.name ) )
+}
+
+bed_out_cb1_fat.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
+    //println (it.name)
+    cb1.contains(id.toInteger()) && food == "fat"
+}.subscribe {
+    it.copyTo( result_dir_cb1_food_fat.resolve ( it.name ) )
+}
+
+bed_out_cb1_nic_fat.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
+    //println (it.name)
+    cb1_nic.contains(id.toInteger()) && food == "fat"
+}.subscribe {
+    it.copyTo( result_dir_cb1_nic_food_fat.resolve ( it.name ) )
+}
+
+
+//def wt_food_fat = [1,3,5,13,15,17,25,27,29,37,39,41]
+//def wt_nic_food_fat = [1,3,5,13,15,17,25,27,29,37,39,41]
+//def cb1_food_fat = [1,3,5,13,15,17,25,27,29,37,39,41]
+//def cb1_nic_food_fat = [1,3,5,13,15,17,25,27,29,37,39,41]
+
+/*
+food_type = [ "sc", "fat" ]
+group = ["wt", "wt_nic", "cb1", "cb1_nic"]
+
+group.each {
+    def group = it
+    food_type.each {
+        def food = it
+        println ( "===" + group + "_" + it )
+        def name_dir = "${params.output}${group}_${food}"
+        //println "====== dir inside each: $name_dir"
+
+        dir = file(name_dir)
+
+        dir.with {
+            if( !empty() ) { deleteDir() }
+            mkdirs()
+            println "Created: $dir"
+        }
+    }
+}
+
+bed_out_igv.into { bed_out_wt; bed_out_wt_nic; bed_out_cb1; bed_out_cb1_nic; bed_out_wt_fat; bed_out_wt_nic_fat; bed_out_cb1_fat; bed_out_cb1_nic_fat }
+
+map_channels =   [ "wt_sc" : bed_out_wt,
+                   "wt_nic_sc" : bed_out_wt_nic,
+                   "cb1_sc" : bed_out_cb1,
+                   "cb1_nic_sc" : bed_out_cb1_nic,
+                   "wt_fat" : bed_out_wt_fat,
+                   "wt_nic_fat" : bed_out_wt_nic_fat,
+                   "cb1_fat" : bed_out_cb1_fat,
+                   "cb1_nic_fat" : bed_out_cb1_nic_fat ]
+
+
+for (group_mice in group) {
+    println ("group=================== $group_mice")
+    for (food_i in food_type) {
+
+        println ("*************** $food_i")
+
+        //bed_out_igv.into { bed_out_igv; bed_out_write }
+
+        //bed_out_write.flatten().println()
+        key = group_mice + "_" + food_i
+        map_channels.get(key).flatten().filter {
+        //bed_out_write.flatten().filter {
+
+            def id = it.name.split("\\_")[1]
+
+            def food = it.name.split("\\_")[4].split("\\.")[0]
+            println ("group mice &&&&&& =================== $group_mice")
+
+            map_id_group.get(group_mice).contains(id.toInteger()) && food == food_i
+
+            //group.contains(id.toInteger()) && food == food_type
+
+        }.subscribe {
+            println ("***********" + it.name)
+            it.copyTo( "${params.output}${group}_${food_i}".resolve ( it.name ) )
+        }
+
+    }
+}
+*/
+/*
+bed_out_igv.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
+    //println (it.name)
+    wt.contains(id.toInteger()) && food == "sc"
+}
+*/
+/*
+.subscribe {
+    it.copyTo( result_dir_wt_food_sc.resolve ( it.name ) )
+}
+*/
+/*
+result_dir_wt_food_sc = file("$params.output/wt_food_sc")
+result_dir_wt_food_fat = file("$params.output/wt_food_fat")
+result_dir_wt_nic_food_sc = file("$params.output/wt_nic_food_sc")
+result_dir_wt_nic_food_fat = file("$params.output/wt_nic_food_fat")
+result_dir_cb1_food_sc = file("$params.output/cb1_food_sc")
+result_dir_cb1_food_fat = file("$params.output/cb1_food_fat")
+result_dir_cb1_nic_food_sc = file("$params.output/cb1_nic_food_sc")
+result_dir_cb1_nic_food_fat = file("$params.output/cb1_nic_food_fat")
+
+result_dir_wt_food_sc.with {
+    if( !empty() ) { deleteDir() }
+    mkdirs()
+    println "Created: $result_dir_wt_food_sc"
+}
+
+bed_out_igv.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
+    //println (food)
+    wt.contains(id.toInteger()) && food == "sc"
+}.subscribe {
+    it.copyTo( result_dir_wt_food_sc.resolve ( it.name ) )
+}
+
+
+.subscribe {
+	  it.copyTo( result_dir_heatmap.resolve ( it.name ) )
+}
+
+
+bed_out_igv.collect {
+    def id = it.name.split("\\.")[1]
+
+    println id
+}
+
+motion_files_flat_p = motion_files.map { name_mat, motion_f ->
+                          motion_f.collect {
+        	                def motion = it.name.split("\\.")[1]
+                          [ it, name_mat, it.name, motion ]
+                          }
+                      }
+                      .flatMap()
+*/
+
+
+//().println()
+
+/*
+motion_f.collect {
+        	                def motion = it.name.split("\\.")[1]
+                          [ it, name_mat, it.name, motion ]
+                          }
+*/
+
+//.filter { it[4] == tag_str1 }
 
 process gviz_visualization {
 
