@@ -135,6 +135,20 @@ process convert_bed {
   	for f in tr_{1,3,5,13,15,17,25,27,29,37,39,41}*
   	do
   	    echo -e "food_sc\tblack" > dict_color
+  	    echo -e "food_fat\tyellow" >> dict_color
+  	    pergola_rules.py -i \${f} -m ${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color'
+  	done
+
+  	for f in tr_{7,9,11,19,21,23,31,33,35,43,45,47,48}*
+  	do
+  	    echo -e "food_sc\torange" > dict_color
+  	    echo -e "food_fat\tblue" >> dict_color
+  	    pergola_rules.py -i \${f} -m ${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color'
+  	done
+
+  	for f in tr_{1,3,5,13,15,17,25,27,29,37,39,41}*
+  	do
+  	    echo -e "food_sc\tblack" > dict_color
   	    echo -e "food_fat\torange" >> dict_color
   	    pergola_rules.py -i \${f} -m ${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color'
   	done
