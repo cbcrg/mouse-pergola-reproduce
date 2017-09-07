@@ -95,14 +95,14 @@ process stats_by_phase {
   	input:
   	file file_preferences from mice_files_preference
   	file mapping_file
-    file mapping_file_phase
-    file exp_phases
+    	file mapping_file_phase
+    	file exp_phases
 
   	output:
   	file 'stats_by_phase' into results_stats_by_phase
   	stdout into max_time
-    file 'exp_phases' into exp_phases_bed_gviz, exp_phases_bed_to_wr
-    file 'exp_phases_sushi' into exp_phases_bed_sushi
+    	file 'exp_phases' into exp_phases_bed_to_wr
+    	file 'exp_phases_sushi' into exp_phases_bed_sushi, exp_phases_bed_gviz
 
   	"""
   	mice_stats_by_phase.py -f "${file_preferences}"/intake*.csv -m ${mapping_file} -s "sum" -b feeding -p ${exp_phases} -mp ${mapping_file_phase}
@@ -115,7 +115,7 @@ process stats_by_phase {
 
 process convert_bed {
 
-    publishDir = [path: {params.output}, mode: 'copy', overwrite: 'true']
+    	publishDir = [path: {params.output}, mode: 'copy', overwrite: 'true']
 
   	input:
   	file ('batch') from mice_files_bed
@@ -130,8 +130,9 @@ process convert_bed {
   	"""
   	pergola_rules.py -i ${batch} -m ${mapping_file} -f bed -nt -e
 
-    shopt -s nullglob
+    	shopt -s nullglob
 
+	# wt
   	for f in tr_{1,3,5,13,15,17,25,27,29,37,39,41}*
   	do
   	    echo -e "food_sc\tblack" > dict_color
@@ -139,6 +140,7 @@ process convert_bed {
   	    pergola_rules.py -i \${f} -m ${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color'
   	done
 
+    	# wt_nic
   	for f in tr_{7,9,11,19,21,23,31,33,35,43,45,47,48}*
   	do
   	    echo -e "food_sc\torange" > dict_color
@@ -146,10 +148,19 @@ process convert_bed {
   	    pergola_rules.py -i \${f} -m ${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color'
   	done
 
-  	for f in tr_{1,3,5,13,15,17,25,27,29,37,39,41}*
+    # cb1
+  	for f in tr_{6,8,10,18,20,22,30,32,34,42,44,46}*
   	do
-  	    echo -e "food_sc\tblack" > dict_color
-  	    echo -e "food_fat\torange" >> dict_color
+  	    echo -e "food_sc\tcyan" > dict_color
+  	    echo -e "food_fat\tred" >> dict_color
+  	    pergola_rules.py -i \${f} -m ${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color'
+  	done
+
+  	# cb1_nic
+  	for f in tr_{2,4,12,14,16,24,26,28,36,38,40}*
+  	do
+  	    echo -e "food_sc\tgreen" > dict_color
+  	    echo -e "food_fat\tpink" >> dict_color
   	    pergola_rules.py -i \${f} -m ${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color'
   	done
   	"""
@@ -157,7 +168,7 @@ process convert_bed {
 
 process convert_bedGraph {
 
-    publishDir = [path: {params.output}, mode: 'copy', overwrite: 'true']
+    	publishDir = [path: {params.output}, mode: 'copy', overwrite: 'true']
 
   	input:
   	file ('batch_bg') from mice_files_bedGraph
@@ -198,7 +209,7 @@ exp_phases_bed_to_wr.subscribe {
 }
 
 bed_out.into { bed_out_gviz; bed_out_sushi; bed_out_igv }
-bedGraph_out.into { bedGraph_out_gviz; bedGraph_out_sushi }
+bedGraph_out.into { bedGraph_out_gviz; bedGraph_out_sushi; bedGraph_out_igv }
 
 def wt = [1,3,5,13,15,17,25,27,29,37,39,41]
 def wt_nic = [7,9,11,19,21,23,31,33,35,43,45,47,48]
@@ -211,9 +222,8 @@ def map_id_group = [ "wt" : [1,3,5,13,15,17,25,27,29,37,39,41],
                      "cb1" : [6,8,10,18,20,22,30,32,34,42,44,46],
                      "cb1_nic" : [2,4,12,14,16,24,26,28,36,38,40] ]
 
-////////////////////////////
 bed_out_igv.into { bed_out_wt; bed_out_wt_nic; bed_out_cb1; bed_out_cb1_nic; bed_out_wt_fat; bed_out_wt_nic_fat; bed_out_cb1_fat; bed_out_cb1_nic_fat }
-
+bedGraph_out_igv.into { bedg_out_wt; bedg_out_wt_nic; bedg_out_cb1; bedg_out_cb1_nic; bedg_out_wt_fat; bedg_out_wt_nic_fat; bedg_out_cb1_fat; bedg_out_cb1_nic_fat }
 result_dir_wt_food_sc = file("$params.output/1_wt_food_sc")
 result_dir_wt_nic_food_sc = file("$params.output/2_wt_nic_food_sc")
 result_dir_cb1_food_sc = file("$params.output/3_cb1_food_sc")
@@ -280,10 +290,26 @@ bed_out_wt.flatten().filter {
     it.copyTo( result_dir_wt_food_sc.resolve ( it.name ) )
 }
 
+bedg_out_wt.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
+    wt.contains(id.toInteger()) && food == "sc"
+}.subscribe {
+    it.copyTo( result_dir_wt_food_sc.resolve ( it.name ) )
+}
+
 bed_out_wt_nic.flatten().filter {
     def id = it.name.split("\\_")[1]
     def food = it.name.split("\\_")[4].split("\\.")[0]
     //println (it.name)
+    wt_nic.contains(id.toInteger()) && food == "sc"
+}.subscribe {
+    it.copyTo( result_dir_wt_nic_food_sc.resolve ( it.name ) )
+}
+
+bedg_out_wt_nic.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
     wt_nic.contains(id.toInteger()) && food == "sc"
 }.subscribe {
     it.copyTo( result_dir_wt_nic_food_sc.resolve ( it.name ) )
@@ -298,6 +324,14 @@ bed_out_cb1.flatten().filter {
     it.copyTo( result_dir_cb1_food_sc.resolve ( it.name ) )
 }
 
+bedg_out_cb1.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
+    cb1.contains(id.toInteger()) && food == "sc"
+}.subscribe {
+    it.copyTo( result_dir_cb1_food_sc.resolve ( it.name ) )
+}
+
 bed_out_cb1_nic.flatten().filter {
     def id = it.name.split("\\_")[1]
     def food = it.name.split("\\_")[4].split("\\.")[0]
@@ -307,10 +341,26 @@ bed_out_cb1_nic.flatten().filter {
     it.copyTo( result_dir_cb1_nic_food_sc.resolve ( it.name ) )
 }
 
+bedg_out_cb1_nic.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
+    cb1_nic.contains(id.toInteger()) && food == "sc"
+}.subscribe {
+    it.copyTo( result_dir_cb1_nic_food_sc.resolve ( it.name ) )
+}
+
 bed_out_wt_fat.flatten().filter {
     def id = it.name.split("\\_")[1]
     def food = it.name.split("\\_")[4].split("\\.")[0]
     //println (it.name)
+    wt.contains(id.toInteger()) && food == "fat"
+}.subscribe {
+    it.copyTo( result_dir_wt_food_fat.resolve ( it.name ) )
+}
+
+bedg_out_wt_fat.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
     wt.contains(id.toInteger()) && food == "fat"
 }.subscribe {
     it.copyTo( result_dir_wt_food_fat.resolve ( it.name ) )
@@ -334,6 +384,14 @@ bed_out_cb1_fat.flatten().filter {
     it.copyTo( result_dir_cb1_food_fat.resolve ( it.name ) )
 }
 
+bedg_out_cb1_fat.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
+    cb1.contains(id.toInteger()) && food == "fat"
+}.subscribe {
+    it.copyTo( result_dir_cb1_food_fat.resolve ( it.name ) )
+}
+
 bed_out_cb1_nic_fat.flatten().filter {
     def id = it.name.split("\\_")[1]
     def food = it.name.split("\\_")[4].split("\\.")[0]
@@ -343,6 +401,13 @@ bed_out_cb1_nic_fat.flatten().filter {
     it.copyTo( result_dir_cb1_nic_food_fat.resolve ( it.name ) )
 }
 
+bedg_out_cb1_nic_fat.flatten().filter {
+    def id = it.name.split("\\_")[1]
+    def food = it.name.split("\\_")[4].split("\\.")[0]
+    cb1_nic.contains(id.toInteger()) && food == "fat"
+}.subscribe {
+    it.copyTo( result_dir_cb1_nic_food_fat.resolve ( it.name ) )
+}
 
 //def wt_food_fat = [1,3,5,13,15,17,25,27,29,37,39,41]
 //def wt_nic_food_fat = [1,3,5,13,15,17,25,27,29,37,39,41]
