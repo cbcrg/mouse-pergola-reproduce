@@ -50,11 +50,12 @@ if("--help" %in% args) {
         --path_bed_files=path_to_bed_files       - character
         --path_to_bedGraph_files=path_bedg_files - character
         --path_to_phases_file=path_phases_files  - character
+        --image_format=image_format              - character
         --help                                   - print this text
         
         Example:
         
-        ./mice_sushi_visualization.R --f_experiment_info=\"path_to_file_experiment_info\" --path_bed_files=\"path_bed_files\" --path_to_bedGraph_files=\"path_bedg_files\" --path_to_phases_file=\"path_exp_phases\"  \n")
+        ./mice_sushi_visualization.R --f_experiment_info=\"path_to_file_experiment_info\" --path_bed_files=\"path_bed_files\" --path_to_bedGraph_files=\"path_bedg_files\" --path_to_phases_file=\"path_exp_phases\" --image_format=\"image_format\" \n")
     
     q (save="no")
 }
@@ -113,6 +114,19 @@ names (argsL) <- argsDF$V1
     else
     {
         phases_file <- argsL$path_to_phases_file
+    }
+}
+
+# plot image format
+{
+    if (is.null (argsL$image_format))
+    {
+        image_format <- ".tiff"
+        warning ("[Warning]: format for plots not provided, default tiff")
+    }
+    else
+    {
+        image_format <- argsL$image_format
     }
 }
 
@@ -181,7 +195,7 @@ data_bed_events <- lapply(b2v$path, function (bed) {
 bedg_dir <- file.path(path_bedG_files)
 perg_bedg_files <- sapply(exp_info$sample, function(id) file.path(bedg_dir, paste(id, ".bedGraph", sep="")))
 
-bg2v<-b2v
+bg2v <- b2v
 bg2v <- dplyr::mutate(bg2v, path = perg_bedg_files)
 
 max_value <- -1000000
@@ -203,8 +217,7 @@ max_value <- 4
 
 ## standardize values to a range of 0 to 1
 unite_scale <- function (v, min=0, max=0.5) {    
-    ifelse(v > max, return(1), return ((v - min) / (max - min)))
-    
+    ifelse(v > max, return(1), return ((v - min) / (max - min)))    
 }
 
 # parameters for sushi
@@ -226,13 +239,30 @@ chromend         = 3635631
 }
 
 ## Plot
-pdf(paste("mice_sushi_viz", ".pdf", sep=""), height=14, width=30)
+plot_name <- "mice_sushi_viz"
+{
+    if (image_format == 'tiff' | image_format == 'tif') {
+        size_lab <- 0.7
+        tiff(paste(plot_name, ".", image_format, sep=""), height=5300, width=4000)
+    }
+    else if (image_format == 'pdf') {        
+        size_lab <- 0.3
+        pdf(paste(plot_name, ".", image_format, sep=""), height=14, width=30)        
+    }
+    else if (image_format == 'png') {        
+        size_lab <- 0.7
+        png(paste(plot_name, ".", image_format, sep=""), height=5300, width=4000)        
+    }
+    else {
+        stop (paste("Unknow image file format:", image_format, sep=" "))
+    }
+}
 
 split.screen (c(2, 1)) 
 
 ## adding a n empty plots for title
 n=3
-size_lab <- 0.3
+# size_lab <- 0.3
 # split.screen(c(length(data_bedg_win)+n, 1), screen = 1)
 # split.screen(c(length(data_bed_events)+length(data_bedg_win)+n, 1), screen = 1)
 split.screen(c(length(data_bed_events) + n, 1), screen = 1)

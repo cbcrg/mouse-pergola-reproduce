@@ -93,6 +93,19 @@ names (argsL) <- argsDF$V1
   }
 }
 
+# plot image format
+{
+    if (is.null (argsL$image_format))
+    {
+        image_format <- ".tiff"
+        warning ("[Warning]: format for plots not provided, default tiff")
+    }
+    else
+    {
+        image_format <- argsL$image_format
+    }
+}
+
 ## Loading parameters for plots
 source("https://gist.githubusercontent.com/JoseEspinosa/307430167b05e408ac071b8724701abf/raw/06b26f764953ceea53d334190d7b736308e5141d/param_plot_publication.R")
 
@@ -251,7 +264,7 @@ data.frame_bed_basal <- subset (data.frame_bed, exp_phase=="Basal")
                                                             FUN=function (x) c (mean=mean(x))))
 
     preference_mean_comb_ph_basal$mean <- preference_mean_comb_ph_basal$pref
-    name_file <- paste ("preference", ".", "png", sep="")
+    name_file <- paste ("preference", ".", image_format, sep="")
 
     ## Join the two tables
     preference_mean_comb_ph <- subset (preference_mean_comb_ph, exp_phase!="Basal")
@@ -272,8 +285,8 @@ data.frame_bed_basal <- subset (data.frame_bed, exp_phase=="Basal")
       # theme (plot.title = element_text(family=font, size=size_titles)) +
       # theme (axis.title.x = element_text(family=font, size=size_axis)) +
       # theme (axis.title.y = element_text(family=font, size=size_axis)) +
-      # theme (axis.text.x = element_text(family=font, size=size_axis_ticks_x, angle=90)) +
-      # theme (axis.text.y = element_text(family=font, size=size_axis_ticks_y)) +
+      theme (axis.text.x = element_text(family=font, size=size_axis_ticks_x, angle=90)) +
+      theme (axis.text.y = element_text(family=font, size=size_axis_ticks_y)) +
       # theme (axis.text.x = element_text(family=font, angle=90, vjust=0.4,hjust=1)) +
       facet_wrap(~exp_phase, ncol=3, scale="free") +
       theme(strip.background = element_rect(fill="white")) +

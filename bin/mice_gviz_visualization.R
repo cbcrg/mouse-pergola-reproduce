@@ -59,10 +59,11 @@ if("--help" %in% args) {
       --f_experiment_info=experiment_info      - character
       --path_bed_files=path_to_bed_files       - character
       --path_bedg_files=path_to_bedGraph_files - character
-      --help                           - print this text
+      --image_format=image_format              - character
+      --help                                   - print this text
 
       Example:
-      ./plot_speed_motion_mean.R --f_experiment_info=\"path_to_file_experiment_info\" --path_bed_files=\"path_bed_files\" --path_to_bedGraph_files=\"path_bedg_files\" \n")
+      ./plot_speed_motion_mean.R --f_experiment_info=\"path_to_file_experiment_info\" --path_bed_files=\"path_bed_files\" --path_to_bedGraph_files=\"path_bedg_files\" --image_format=\"image_format\"\n")
 
   q (save="no")
 }
@@ -121,6 +122,19 @@ names (argsL) <- argsDF$V1
   {
     phases_file <- argsL$path_to_phases_file
   }
+}
+
+# plot image format
+{
+    if (is.null (argsL$image_format))
+    {
+        image_format <- "tiff"
+        warning ("[Warning]: format for plots not provided, default tiff")
+    }
+    else
+    {
+        image_format <- argsL$image_format
+    }
 }
 
 #############################
@@ -302,11 +316,30 @@ for (i in 1:10) {
   displayPars(ctracks[[i]]) <- list(background.title="transparent")
 }
 
-name_file <- "mice_gviz_viz.tiff"
+plot_name <- "mice_gviz_viz"
+
+{
+    if (image_format == 'tiff' | image_format == 'tif') {
+        tiff(paste(plot_name, ".", image_format, sep=""), width = 45 , height = 34, units = "cm", res=300)        
+        size_lab <- 0.3
+    }
+    else if (image_format == 'pdf') {        
+        pdf(paste(plot_name, ".", image_format, sep=""), width = 45 , height = 34)
+        size_lab <- 0.5
+    }
+    else if (image_format == 'png') {        
+        png(paste(plot_name, ".", image_format, sep=""), width = 45 , height = 34, units = "cm", res=300)
+        size_lab <- 0.3
+    }
+    else {
+        stop (paste("Unknow image file format:", image_format, sep=" "))
+    }
+}
+
 # name_file <- "mice_gviz_viz.png"
 # png(name_file, width = 45 , height = 34, units = "cm", res=300)
 # png(name_file, width = 2000 , height = 1800, res=100)
-tiff(name_file, width = 45 , height = 34, units = "cm", res=300)
+# tiff(name_file, width = 45 , height = 34, units = "cm", res=300)
 # names(l_gr_annotation_tr_bed)
 p <- plotTracks(c(g_tr, unlist(l_gr_annotation_tr_bed), unlist(l_gr_data_tr_bg),  phases_tr, unlist(ctracks)),
            from=0, to=3628800, 
