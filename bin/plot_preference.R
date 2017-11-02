@@ -48,12 +48,13 @@ if("--help" %in% args) {
       starting_regions_file_vs_24h
       
       Arguments:
-      --stat=someValue        - character, stat to analyze (sum, mean, ...)
-      --path2files=someValue - character, path to read files
-      --help                 - print this text
+      --stat=someValue            - character, stat to analyze (sum, mean, ...)
+      --path2files=someValue      - character, path to read files
+      --image_format=image_format - character
+      --help                      - print this text
       
       Example:
-      ./starting_regions_file_vs_24h.R --stat=\"sum\" \n")
+      ./starting_regions_file_vs_24h.R --stat=\"sum\" --path2files=\"path_to_files\" --image_format=\"image_format\" \n")
   
   q (save="no")
 }
@@ -97,7 +98,7 @@ names (argsL) <- argsDF$V1
 {
     if (is.null (argsL$image_format))
     {
-        image_format <- ".tiff"
+        image_format <- "tiff"
         warning ("[Warning]: format for plots not provided, default tiff")
     }
     else

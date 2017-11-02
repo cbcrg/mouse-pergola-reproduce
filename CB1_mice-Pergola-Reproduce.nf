@@ -122,9 +122,22 @@ process stats_by_phase {
   	"""
 }
 
+
+/*
+def function_name (file_name) {
+    // all the stuff that I have to generate folders
+
+}
+
+process convert_bed {
+    publishDir = outdir, saveAs: this.&function_name
+}
+*/
+
+
 process convert_bed {
 
-    	publishDir = [path: {params.output}, mode: 'copy', overwrite: 'true']
+    publishDir = [path: {params.output}, mode: 'copy', overwrite: 'true']
 
   	input:
   	file ('batch') from mice_files_bed
@@ -237,7 +250,7 @@ process convert_bed {
 
 process convert_bedGraph {
 
-    	publishDir = [path: {params.output}, mode: 'copy', overwrite: 'true']
+    publishDir = [path: {params.output}, mode: 'copy', overwrite: 'true']
 
   	input:
   	file ('batch_bg') from mice_files_bedGraph

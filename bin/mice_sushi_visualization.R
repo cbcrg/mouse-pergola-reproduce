@@ -121,7 +121,7 @@ names (argsL) <- argsDF$V1
 {
     if (is.null (argsL$image_format))
     {
-        image_format <- ".tiff"
+        image_format <- "tiff"
         warning ("[Warning]: format for plots not provided, default tiff")
     }
     else
