@@ -290,7 +290,7 @@ data.frame_bed_basal <- subset (data.frame_bed, exp_phase=="Basal")
       theme (axis.text.y = element_text(family=font, size=size_axis_ticks_y)) +
       # theme (axis.text.x = element_text(family=font, angle=90, vjust=0.4,hjust=1)) +
       facet_wrap(~exp_phase, ncol=3, scale="free") +
-      theme(strip.background = element_rect(fill="white")) +
+      theme(strip.background = element_rect(fill="white"), plot.title = element_text(hjust = 0.5)) +
       theme(strip.text.x = element_text(size = size_axis_ticks_x), legend.title=element_blank())
     
     ggsave (file=name_file, width=plot_width, height=plot_height, dpi=300)
