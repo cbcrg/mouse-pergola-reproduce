@@ -130,10 +130,9 @@ bed_dict ['KO_cb1_nicotine'][data_type_2] =  data_read_all_batches.convert(mode=
                                                                            color_restrictions=data_type_col, tracks=list_KO_cb1_nic)
 
 # Generating sequence of days without light and dark phases
-# mapping.write_period_seq(end=end_time, delta=86400, tag="day", name_file="days_seq", path_w=out_dir)#delnow
 mapping.write_period_seq(end=end_time, delta=86400, tag="day", name_file="days_seq")
+mapping.write_cytoband(start=0, end=end_time, track_line=False, lab_bed=False)
 
-# days_bed_f = out_dir + "days_seq.bed" #delnow
 days_bed_f = "days_seq.bed"
 
 days_bed = pybedtools.BedTool(days_bed_f)
@@ -142,10 +141,11 @@ days_bed = pybedtools.BedTool(days_bed_f)
 mapping_data_phases = mapping.MappingInfo(args.mapping_phases)
 
 int_exp_phases = intervals.IntData(args.phases_exp_file, map_dict=mapping_data_phases.correspondence)
+ 
 data_read_exp_phases = int_exp_phases.read(relative_coord=True)
 
 d_exp_phases_bed2file = data_read_exp_phases.convert(mode="bed", data_types_actions="all")
-# d_exp_phases_bed2file[d_exp_phases_bed2file.keys()[0]].save_track(bed_label="True", path=base_dir + results_dir, name_file="exp_phases")
+
 d_exp_phases_bed2file[d_exp_phases_bed2file.keys()[0]].save_track(bed_label="True", name_file="exp_phases")
 
 d_exp_phases_bed = data_read_exp_phases.convert(mode="bed", data_types_actions='one_per_channel')
