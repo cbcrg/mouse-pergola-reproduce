@@ -112,6 +112,7 @@ process stats_by_phase {
   	stdout into max_time
     	file 'exp_phases' into exp_phases_bed_to_wr
     	file 'exp_phases_sushi' into exp_phases_bed_sushi, exp_phases_bed_gviz
+	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz
 
   	"""
   	mice_stats_by_phase.py -f "${file_preferences}"/intake*.csv -m ${mapping_file} -s "sum" -b feeding -p ${exp_phases} -mp ${mapping_file_phase}
@@ -527,8 +528,8 @@ process gviz_visualization {
     file 'exp_info' from exp_info
     file 'bed_dir/*' from bed_out_gviz.collect()
     file 'bedgr_dir/*' from bedGraph_out_gviz.collect()
-    file exp_phases_bed from exp_phases_bed_gviz
-
+    // file exp_phases_bed from exp_phases_bed_gviz
+    file exp_phases_bed from exp_circadian_phases_gviz
     output:
     file "*.${image_format}" into gviz
 
@@ -550,7 +551,8 @@ process sushi_visualization {
     file 'exp_info' from exp_info
     file 'bed_dir/*' from bed_out_sushi.collect()
     file 'bedgr_dir/*' from bedGraph_out_sushi.collect()
-    file exp_phases_bed from exp_phases_bed_sushi
+    //file exp_phases_bed from exp_phases_bed_sushi
+    file exp_phases_bed from exp_circadian_phases_sushi
 
     output:
     file "*.${image_format}" into sushi
