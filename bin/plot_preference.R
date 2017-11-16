@@ -1,3 +1,4 @@
+
 #!/usr/bin/env Rscript
 
 #  Copyright (c) 2014-2017, Centre for Genomic Regulation (CRG).
@@ -28,7 +29,7 @@
 ##Loading libraries
 library ("ggplot2")
 # library ("plotrix") #std.error
-# library("extrafont")
+library("extrafont")
 library ("gtools") 
 library("dplyr")
 
@@ -115,7 +116,6 @@ pwd <- getwd()
 setwd(path2files)
 
 files <- list.files(pattern=paste("tr_.*.bed$", sep=""))
-# stat<-"sum"
 data.frame_bed <- NULL
 
 for (bed_file in files) {
@@ -203,6 +203,7 @@ data.frame_bed <- subset (data.frame_bed, V4!="day_15" & V4!="day_16" & V4!="day
     units <- 'no units'
   }
 }
+
 size_titles <- 20
 size_axis <- 18
 size_axis_ticks_x <- 14
@@ -210,8 +211,8 @@ size_axis_ticks_y <- 14
 size_strip_txt <- 14
 plot_width <- 12
 plot_height <- 10
-font <- "Arial"
-
+# font <- "Arial"
+font <- "Helvetica"
 name_file <- "plot"
 
 # plot_title <- switch (stat, count=bouts_title, mean="Mean intake per feeding bout", median='Median intake per feeding bout', sum='Accumulated intake',
