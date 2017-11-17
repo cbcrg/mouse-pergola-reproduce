@@ -38,8 +38,12 @@ Once data is downloaded, it is possible to reproduce all the results using this 
 
 ```bash
 NXF_VER=0.24.3 nextflow run CB1_mice-Pergola-Reproduce.nf \ 
-    --recordings='data/mice_recordings/*.csv' \
+    --recordings='data/mice_recordings/' \
     --mappings='data/mappings/b2p.txt' \
+    --mappings_bed='small_data/mappings/bed2pergola.txt' \
+    --phases='small_data/mice_recordings/exp_phases.csv' \
+    --exp_info='exp_info.txt' 
+    --image_format='tiff'
     -with-docker
 ```
 
