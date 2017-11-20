@@ -4,25 +4,16 @@ This repository contains the software, scripts and data to reproduce the results
 
 If you have not install yet [docker](https://www.docker.com/) and [nextflow](https://www.nextflow.io/), follow this [intructions](../README.md)
 
-## Data processing
-
-### Pull docker image
-Pull the Docker image use for processing data with Pergola (Pergola and its dependencies installed)
-
-```bash
-docker pull pergola/pergola@sha256:8a52116be9bd371ae9bed9c0b36a8fc14634a7e14bbc764cc93905d8566e0939
-```
-
-### Clone the repository
+## Clone the repository
 
 ```bash
 git clone --recursive https://github.com/JoseEspinosa/pergola-paper-reproduce.git
 cd pergola-paper-reproduce/cb1_mice
 ```
 
-**Note**: If you have previously download the repository, then you only need to go to the ``cb1_mice`` folder.
+**Note**: If you have previously download the repository, then you only need to go to the ``cb1_mice`` folder
 
-### Data
+## Data
 
 Data is publicly available in [Zenodo](https://zenodo.org/) as a compressed tarball.
 
@@ -33,23 +24,31 @@ mkdir data
 wget -O- https://zenodo.org/record/580312/files/CB1_mice.tar.gz | tar xz -C data
 ```
 
-### Run nextflow pipeline
+## Pull docker image
+Pull the Docker image use for processing data with Pergola (Pergola and its dependencies installed)
+
+```bash
+docker pull pergola/pergola@sha256:f7208e45e761dc0cfd3e3915237eb1a96eead6dfa9c8f3a5b2414de9b8df3a3d
+```
+
+## Run nextflow pipeline
 Once data is downloaded, it is possible to reproduce all the results using this command:
 
 ```bash
-NXF_VER=0.24.3 nextflow run CB1_mice-Pergola-Reproduce.nf \ 
-    --recordings='data/mice_recordings/' \
-    --mappings='data/mappings/b2p.txt' \
-    --mappings_bed='small_data/mappings/bed2pergola.txt' \
-    --phases='small_data/mice_recordings/exp_phases.csv' \
-    --exp_info='exp_info.txt' 
-    --image_format='tiff'
-    -with-docker
+NXF_VER=0.24.3 nextflow run CB1_mice-Pergola-Reproduce.nf \
+  --recordings='data/mice_recordings/' \
+  --mappings='data/mappings/b2p.txt' \
+  --mappings_bed='data/mappings/bed2pergola.txt' \
+  --phases='data/mice_recordings/exp_phases.csv' \
+  --mappings_phase='data/mappings/f2g.txt' \
+  --exp_info='data/mappings/exp_info_small.txt' \
+  --image_format='tiff' \
+  -with-docker
 ```
 
 ## Online visualization
 
-### Downloading shiny-pergola config file
+#### Downloading shiny-pergola config file
 
 Download the configuration files assigning files to each of the group (wt_food_sc, wt_food_fat, cb1_food_sc, cb1_food_fat)
 
@@ -57,7 +56,7 @@ Download the configuration files assigning files to each of the group (wt_food_s
 wget -O-  https://gist.githubusercontent.com/JoseEspinosa/9e65d54d765d9e5af554d837b3427569/raw/48fb424fb367c570461e7e6c8226abf81ead8ee2/cb1_pergola_conf.txt > exp_info.txt
 ```
 
-### Downloading and running the shiny-pergola image
+#### Downloading and running the shiny-pergola image
 
 Pull the docker image containing the version of shiny-pergola web application used for render the data visualization:
 

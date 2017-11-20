@@ -1,4 +1,3 @@
-
 #!/usr/bin/env Rscript
 
 #  Copyright (c) 2014-2017, Centre for Genomic Regulation (CRG).
@@ -26,7 +25,7 @@
 ### phases or other phases                                                ###
 #############################################################################
 
-##Loading libraries
+## Loading libraries
 library ("ggplot2")
 # library ("plotrix") #std.error
 library("extrafont")
