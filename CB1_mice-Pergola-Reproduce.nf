@@ -41,7 +41,6 @@ log.info "mappings phases        : ${params.mappings_phase}"
 log.info "experimental info      : ${params.exp_info}"
 log.info "output                 : ${params.output}"
 log.info "image format           : ${params.image_format}"
-
 log.info "\n"
 
 // Example command to run the script
