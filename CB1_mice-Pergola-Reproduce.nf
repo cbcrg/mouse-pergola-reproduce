@@ -288,7 +288,7 @@ bed_out_shiny_p.flatten().subscribe {
     it.copyTo( result_dir_shiny_p.resolve (  ) )
 }
 
-result_dir_IGV = file("results/IGV/")
+result_dir_IGV = file("results/igv/")
 
 longest_fasta = out_fasta
                    .max { it.size() }
@@ -344,9 +344,6 @@ exp_phases_bed_to_wr.subscribe {
 exp_phases_bed_to_wr2.subscribe {
     it.copyTo( result_dir_shiny_p.resolve ( 'exp_phases.bed' ) )
 }
-
-//bed_out.into { bed_out_gviz; bed_out_sushi }
-//bedGraph_out.into { bedGraph_out_gviz; bedGraph_out_sushi }
 
 process gviz_visualization {
 
