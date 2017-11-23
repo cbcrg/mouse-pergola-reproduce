@@ -35,13 +35,13 @@ docker pull pergola/pergola@sha256:f7208e45e761dc0cfd3e3915237eb1a96eead6dfa9c8f
 Once data is downloaded, it is possible to reproduce all the results using this command:
 
 ```bash
-NXF_VER=0.24.3 nextflow run CB1_mice-Pergola-Reproduce.nf \
+NXF_VER=0.26.1 nextflow run CB1_mice-Pergola-Reproduce.nf \
   --recordings='data/mice_recordings/' \
   --mappings='data/mappings/b2p.txt' \
   --mappings_bed='data/mappings/bed2pergola.txt' \
   --phases='data/mice_recordings/exp_phases.csv' \
   --mappings_phase='data/mappings/f2g.txt' \
-  --exp_info='data/mappings/exp_info_small.txt' \
+  --exp_info='data/mappings/exp_info.txt' \
   --image_format='tiff' \
   -with-docker
 ```
