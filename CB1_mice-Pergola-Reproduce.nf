@@ -26,10 +26,14 @@
  * Script to reproduce Pergola paper figures of CB1 mice experiment
  */ 
 
-params.recordings  = "$baseDir/small_data/mice_recordings/*.csv"
-params.mappings    = "$baseDir/small_data/mappings/b2p.txt"   
-params.output      = "files/"
-params.image_format = "tiff"
+params.recordings     = "$baseDir/small_data/mice_recordings/"
+params.mappings       = "$baseDir/small_data/mappings/b2p.txt"
+params.mappings_bed   = "$baseDir/small_data/mappings/bed2pergola.txt"
+params.phases         = "$baseDir/small_data/mice_recordings/exp_phases.csv"
+params.mappings_phase = "$baseDir/small_data/mappings/f2g.txt"
+params.exp_info       = "$baseDir/small_data/mappings/exp_info_small.txt"
+params.output         = "files/"
+params.image_format   = "tiff"
 
 log.info "CB1_mice - Pergola - Reproduce  -  version 0.1"
 log.info "====================================="
