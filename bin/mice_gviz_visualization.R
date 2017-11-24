@@ -277,13 +277,13 @@ df_legend$names <- ordered(gsub("_", " ", df_legend$names), levels = gsub("_", "
 color_by_tr <- unlist(l_gr_color[levels(exp_info$condition)])
 names(color_by_tr) <- gsub("_", " ", levels(exp_info$condition))
 # size_text_leg <- 18
-size_text_leg <- 22
+size_text_leg <- 16
 df_empty <- data.frame()
 
 plot_legends <- ggplot(df_empty) + geom_point() + 
                 theme(panel.border = element_blank(), panel.background = element_blank())
 # size_box_leg <- 5
-size_box_leg <- 10
+size_box_leg <- 6
 plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, colour = names), shape=15, size=size_box_leg) +
                 scale_colour_manual (values=color_by_tr) + 
                 guides(color=guide_legend(title=NULL)) + 
@@ -348,15 +348,14 @@ plot_name <- "mice_gviz_viz"
 }
 
 p <- plotTracks(c(g_tr, unlist(l_gr_annotation_tr_bed), unlist(l_gr_data_tr_bg),  phases_tr, unlist(ctracks)),
-# p <- plotTracks(c(g_tr, unlist(l_gr_data_tr_bg),  phases_tr, unlist(ctracks)),
-	   ##different windows of time selected
+	       ##different windows of time selected
            from=0, to=3628800, # all data
            # from=2592000, to=3456000,
            # from=2851200, to=3024000,
-	   ##range of heatmap data
+           ##range of heatmap data
            ylim=c(0,0.5), #ori
-           # ylim=c(0,0.3),
            shape = "box", stacking = "dense",
            fontsize=size_labels, cex=cex_gtrack)
 grid.draw (leg_groups)
+
 dev.off()
