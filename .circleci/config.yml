@@ -12,7 +12,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: download
+          name: Install nextflow
           command: 'curl -fsSL get.nextflow.io | bash'
       - run:
           name: Test
