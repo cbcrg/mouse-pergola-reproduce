@@ -7,7 +7,7 @@ jobs:
       - checkout
       - run:
           name: install nxf
-          command: 'command: curl -fsSL get.nextflow.io | bash'
+          command: 'curl -fsSL get.nextflow.io | bash'
   test:
     docker:
       - image: circleci/openjdk:8-jdk-browsers
