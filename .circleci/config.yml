@@ -1,0 +1,35 @@
+version: 2
+
+jobs:
+  build:
+
+  docker:
+    - image: circleci/openjdk:8-jdk-browsers
+
+  test:
+  steps:
+
+    - checkout
+
+    - run:
+        name: get nextflow
+        command: curl -fsSL get.nextflow.io | bash
+
+    - run:
+          name: run test
+          command: - ./nextflow run . -with-docker
+          timeout: 1200
+
+
+
+#machine:
+#  java:
+#    version: openjdk8
+#  services:
+#    - docker
+#
+#test:
+#  override:
+#    - curl -fsSL get.nextflow.io | bash
+#    - ./nextflow run . -with-docker :
+#        timeout: 1200
