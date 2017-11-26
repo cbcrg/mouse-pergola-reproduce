@@ -1,20 +1,21 @@
 version: 2
-
 jobs:
   build:
-
-  docker:
-    - image: circleci/openjdk:8-jdk-browsers
-
+    docker:
+      - image: circleci/openjdk:8-jdk-browsers
+    steps:
+      - checkout
+      - run:
+          name: Update npm
+          command: mkdir test
   test:
     docker:
       - image: circleci/openjdk:8-jdk-browsers
     steps:
       - checkout
       - run:
-          name: Install nextflow
-          command: 'curl -fsSL get.nextflow.io | bash'
-      - run:
           name: Test
-          command: './nextflow run . -with-docker'
-
+          command: curl -fsSL get.nextflow.io | bash
+      - run:
+          name: Generate code coverage
+          command: ./nextflow run . -with-docker
