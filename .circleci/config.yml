@@ -6,8 +6,8 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Test mkdir
-          command: mkdir test
+          name: install nxf
+          command: 'command: curl -fsSL get.nextflow.io | bash'
   test:
     docker:
       - image: circleci/openjdk:8-jdk-browsers
@@ -15,10 +15,7 @@ jobs:
       - checkout
       - run:
           name: Test
-          command: curl -fsSL get.nextflow.io | bash
-      - run:
-          name: Generate code coverage
-          command: ./nextflow run . -with-docker
+          command: './nextflow run . -with-docker'
 
   workflows:
   version: 2
