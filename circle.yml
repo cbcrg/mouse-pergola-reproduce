@@ -2,10 +2,11 @@ machine:
   java:
     version: openjdk8
   services:
-    - docker
+    - docker:
+      version: 17.10.0-ce
     
 test:
   override:
     - curl -fsSL get.nextflow.io | bash
     - ./nextflow run . -with-docker :
-        timeout: 6000
+        timeout: 1200
