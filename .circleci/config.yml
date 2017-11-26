@@ -12,22 +12,9 @@ jobs:
     steps:
       - checkout
       - run:
-          name: get nextflow
+          name: download
           command: 'curl -fsSL get.nextflow.io | bash'
       - run:
-          name: pipeline execution
-          command: '- ./nextflow run . -with-docker'
+          name: Test
+          command: './nextflow run . -with-docker'
 
-
-
-#machine:
-#  java:
-#    version: openjdk8
-#  services:
-#    - docker
-#
-#test:
-#  override:
-#    - curl -fsSL get.nextflow.io | bash
-#    - ./nextflow run . -with-docker :
-#        timeout: 1200
