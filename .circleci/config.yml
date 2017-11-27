@@ -1,30 +1,22 @@
 version: 2
 jobs:
   build:
-    docker:
-      - image: circleci/openjdk:8-jdk-browsers
+    machine:
+      image: circleci/classic:201703-01
     steps:
       - checkout
       - run:
-          name: install nxf
-          command: 'curl -fsSL get.nextflow.io | bash'
+          name: Install Nextflow
+          command: curl -fsSL get.nextflow.io | bash
   test:
-    docker:
-      - image: circleci/openjdk:8-jdk-browsers
-    steps:
       - checkout
       - run:
-          name: Test
-          command: './nextflow run . -with-docker'
+          name: Run Pipeline
+          command: ./nextflow run . -with-docker
 
-  workflows:
+workflows:
   version: 2
   build_and_test:
     jobs:
       - build
-      - test:
-          requires:
-            - build
-          filters:
-            branches:
-              only: master
+      - test
