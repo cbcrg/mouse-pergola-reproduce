@@ -1,4 +1,4 @@
-# CB1-mice-Pergola-Reproduce.nf
+# mouse-pergola-reproduce.nf
 
 ![CircleCI status](https://circleci.com/gh/JoseEspinosa/mouse-pergola-reproduce.png?style=shield)
 [![nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.20.0-brightgreen.svg)](http://nextflow.io)
@@ -10,11 +10,9 @@ If you have not install yet [docker](https://www.docker.com/) and [nextflow](htt
 ## Clone the repository
 
 ```bash
-git clone --recursive https://github.com/JoseEspinosa/pergola-paper-reproduce.git
-cd pergola-paper-reproduce/cb1_mice
+git clone --recursive https://github.com/JoseEspinosa/mouse-pergola-reproduce.git
+cd mouse-pergola-reproduce
 ```
-
-**Note**: If you have previously download the repository, then you only need to go to the ``cb1_mice`` folder
 
 ## Data
 
@@ -24,7 +22,7 @@ Data can be downloaded and uncompressed using the following command:
 
 ```bash
 mkdir data
-wget -O- https://zenodo.org/record/580312/files/CB1_mice.tar.gz | tar xz -C data
+wget -O- https://zenodo.org/record/580312/files/mouse_dataset.tar.gz | tar xz -C data
 ```
 
 ## Pull docker image
@@ -38,11 +36,11 @@ docker pull pergola/pergola@sha256:f7208e45e761dc0cfd3e3915237eb1a96eead6dfa9c8f
 Once data is downloaded, it is possible to reproduce all the results using this command:
 
 ```bash
-NXF_VER=0.26.1 nextflow run CB1_mice-Pergola-Reproduce.nf \
-  --recordings='data/mice_recordings/' \
+NXF_VER=0.26.1 nextflow run mouse-pergola-reproduce.nf \
+  --recordings='data/mouse_recordings/' \
   --mappings='data/mappings/b2p.txt' \
   --mappings_bed='data/mappings/bed2pergola.txt' \
-  --phases='data/mice_recordings/exp_phases.csv' \
+  --phases='data/phases/exp_phases.csv' \
   --mappings_phase='data/mappings/f2g.txt' \
   --exp_info='data/mappings/exp_info.txt' \
   --image_format='tiff' \
@@ -73,7 +71,7 @@ With docker running, launch the image:
 docker run --rm -p 3600:80 -v "$(pwd)":/pergola_data  pergola/shiny-pergola@sha256:e8791c5f230b612a6f702ac397849163e3a52b923befd1977e4a4c0235e91f72 &
 ```
 
-**Note**: `"$(pwd)"` can be substitute by your absolute path to the folder where the `CB1_mice-Pergola-Reproduce.nf` has been run. 
+**Note**: `"$(pwd)"` can be substitute by your absolute path to the folder where the `mouse-pergola-reproduce.nf` has been run. 
 
 **Note**: Figure has several snapshots if you want to get exactly the exact the same figure just select it by setting on id.txt file. For instance if you want to reproduce figure **a** you just have to type the following command before running Docker shiny-pergola image.
 

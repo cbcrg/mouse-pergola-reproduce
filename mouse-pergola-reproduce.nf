@@ -26,10 +26,10 @@
  * Script to reproduce Pergola paper figures of CB1 mice experiment
  */ 
 
-params.recordings     = "$baseDir/small_data/mice_recordings/"
+params.recordings     = "$baseDir/small_data/mouse_recordings/"
 params.mappings       = "$baseDir/small_data/mappings/b2p.txt"
 params.mappings_bed   = "$baseDir/small_data/mappings/bed2pergola.txt"
-params.phases         = "$baseDir/small_data/mice_recordings/exp_phases.csv"
+params.phases         = "$baseDir/small_data/phases/exp_phases.csv"
 params.mappings_phase = "$baseDir/small_data/mappings/f2g.txt"
 params.exp_info       = "$baseDir/small_data/mappings/exp_info_small.txt"
 params.output         = "files/"
@@ -49,11 +49,11 @@ log.info "\n"
 
 // Example command to run the script
 /*
-nextflow run CB1_mice-Pergola-Reproduce.nf \
+nextflow run mouse-pergola-reproduce.nf \
   --recordings='small_data/mice_recordings/' \
   --mappings='small_data/mappings/b2p.txt' \
   --mappings_bed='small_data/mappings/bed2pergola.txt' \
-  --phases='small_data/mice_recordings/exp_phases.csv' \
+  --phases='small_data/phases/exp_phases.csv' \
   --mappings_phase='small_data/mappings/f2g.txt' \
   --exp_info='small_data/mappings/exp_info_small.txt' \
   --image_format='tiff' \
