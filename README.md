@@ -1,5 +1,8 @@
 # CB1-mice-Pergola-Reproduce.nf
 
+![CircleCI status](https://circleci.com/gh/JoseEspinosa/mouse-pergola-reproduce.png?style=shield)
+[![nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.20.0-brightgreen.svg)](http://nextflow.io)
+
 This repository contains the software, scripts and data to reproduce the results corresponding to the CB1 mice experiment of the Pergola paper.
 
 If you have not install yet [docker](https://www.docker.com/) and [nextflow](https://www.nextflow.io/), follow this [intructions](../README.md)

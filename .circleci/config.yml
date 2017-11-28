@@ -1,0 +1,13 @@
+version: 2
+jobs:
+  build:
+    machine:
+      image: circleci/classic:201703-01
+    steps:
+      - checkout
+      - run:
+          name: Install Nextflow
+          command: curl -fsSL get.nextflow.io | bash
+      - run:
+          name: Run Pipeline
+          command: ./nextflow run . -with-docker
