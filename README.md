@@ -5,7 +5,7 @@
 
 This repository contains the software, scripts and data to reproduce the results corresponding to the CB1 mice experiment of the Pergola paper.
 
-If you have not install yet [docker](https://www.docker.com/) and [nextflow](https://www.nextflow.io/), follow this [intructions](../README.md)
+If you have not install yet [docker](https://www.docker.com/) and [nextflow](https://www.nextflow.io/), follow this [intructions](https://github.com/cbcrg/pergola-reproduce/blob/master/README.md)
 
 ## Clone the repository
 
@@ -22,7 +22,7 @@ Data can be downloaded and uncompressed using the following command:
 
 ```bash
 mkdir data
-wget -O- https://zenodo.org/record/580312/files/mouse_dataset.tar.gz | tar xz -C data
+wget -O- https://zenodo.org/record/1067839/files/mouse_dataset.tar.gz | tar xz -C data
 ```
 
 ## Pull docker image
@@ -49,13 +49,10 @@ NXF_VER=0.26.1 nextflow run mouse-pergola-reproduce.nf \
 
 ## Online visualization
 
-#### Downloading shiny-pergola config file
+#### shiny-pergola config file
 
-Download the configuration files assigning files to each of the group (wt_food_sc, wt_food_fat, cb1_food_sc, cb1_food_fat)
-
-```bash
-wget -O-  https://gist.githubusercontent.com/JoseEspinosa/9e65d54d765d9e5af554d837b3427569/raw/48fb424fb367c570461e7e6c8226abf81ead8ee2/cb1_pergola_conf.txt > exp_info.txt
-```
+The repository includes a file assigning files to each of the group (*WT food sc, WT nic food sc, CB1 food sc, CB1 nic food sc, WT food fat, WT nic food fat, CB1 food fat, CB1 nic food fat*)
+You can also check the file [here](https://gist.githubusercontent.com/JoseEspinosa/9e65d54d765d9e5af554d837b3427569/raw/48fb424fb367c570461e7e6c8226abf81ead8ee2/cb1_pergola_conf.txt) 
 
 #### Downloading and running the shiny-pergola image
 
@@ -73,15 +70,23 @@ docker run --rm -p 3600:80 -v "$(pwd)":/pergola_data  pergola/shiny-pergola@sha2
 
 **Note**: `"$(pwd)"` can be substitute by your absolute path to the folder where the `mouse-pergola-reproduce.nf` has been run. 
 
-**Note**: Figure has several snapshots if you want to get exactly the exact the same figure just select it by setting on id.txt file. For instance if you want to reproduce figure **a** you just have to type the following command before running Docker shiny-pergola image.
+**Note**: Paper contain several figures related to mouse dataset analysis. If you want to get exactly one of the figure just select it by setting the figure on id.txt file. For instance if you want to reproduce **Supplementary figure 4a** you just have to type the following command before running Docker shiny-pergola image.
 
 ```bash
-echo "cb1_a" > id.txt
+echo "cb1_b" > id.txt
 ```
+
+The codes for each figure are:
+
+| Figure        | Code  |
+| ------------- | ----- |
+| Supp. Fig. 3  | cb1_a |
+| Supp. Fig. 4a | cb1_b |
+| Supp. Fig. 4b | cb1_c |
 
 Go to your web browser and type in your address bar the ip address returned by the following command e.g. http://0.0.0.0:3600
 
-**Note**: In newer Docker versions by default the IP address used is the localhost ``0.0.0.0``. As this IP might be used by other services in the default port (80), we especified the port used in our docker command by ``-p 3600:80``. Old docker versions running in OS might used a different IP address that you can get using the following command (usually this one ``http://192.168.99.100``). You may then enter this IP followed by the same port in the address bar of your browser ``http://192.168.99.100:3600``.
+**Note**: In newer Docker versions by default the IP address used is the localhost ``0.0.0.0``. As this IP might be used by other services in the default port (80), we especified the port used in our docker command by ``-p 3600:80``. Old docker versions might used a different IP address that you can get using the following command (usually this one ``http://192.168.99.100``). You may then enter this IP followed by the same port in the address bar of your browser e.g. ``http://192.168.99.100:3600``.
 
 ```bash
 docker-machine ip default 

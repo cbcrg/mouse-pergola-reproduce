@@ -35,7 +35,7 @@ params.exp_info       = "$baseDir/small_data/mappings/exp_info_small.txt"
 params.output         = "files/"
 params.image_format   = "tiff"
 
-log.info "CB1_mice - Pergola - Reproduce  -  version 0.1"
+log.info "Mouse - Pergola - Reproduce  -  version 0.1"
 log.info "====================================="
 log.info "mice recordings        : ${params.recordings}"
 log.info "mappings               : ${params.mappings}"
@@ -97,7 +97,6 @@ mice_files.into { mice_files_bed; mice_files_bedGraph }
 /*
  * Create a channel for mice recordings
  */
-
 Channel
     .fromPath( params.recordings )
     .set { mice_files_preference }
