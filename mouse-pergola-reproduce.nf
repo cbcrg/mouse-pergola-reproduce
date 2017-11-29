@@ -301,6 +301,14 @@ longest_fasta.subscribe {
     fasta_file.copyTo ( result_dir_IGV.resolve ( "mice.fa" ) )
 }
 
+longest_phases_dark = phases_dark
+                        .max { it.size() }
+
+longest_phases_dark.subscribe {
+    phases_file = it
+    phases_file.copyTo ( result_dir_shiny_p.resolve ( "phases_dark.bed" ) )
+}
+
 process convert_bedGraph {
 
     publishDir params.output_res, mode: 'copy', pattern: "tr*food*.bedGraph", saveAs: this.&igv_files_by_group
