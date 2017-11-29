@@ -1,5 +1,6 @@
 # mouse-pergola-reproduce.nf
 
+[![DOI](https://zenodo.org/badge/112313774.svg)](https://zenodo.org/badge/latestdoi/112313774)
 ![CircleCI status](https://circleci.com/gh/cbcrg/mouse-pergola-reproduce.png?style=shield)
 [![nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.20.0-brightgreen.svg)](http://nextflow.io)
 
