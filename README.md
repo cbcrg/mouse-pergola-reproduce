@@ -17,7 +17,7 @@ cd mouse-pergola-reproduce
 
 ## Data
 
-Data is publicly available in [Zenodo](https://zenodo.org/) as a compressed tarball.
+Data is publicly available in [Zenodo](https://zenodo.org/) as a compressed tarball [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1067839.svg)](https://doi.org/10.5281/zenodo.1067839).
 
 Data can be downloaded and uncompressed using the following command:
 
@@ -48,7 +48,17 @@ NXF_VER=0.26.1 nextflow run mouse-pergola-reproduce.nf \
   -with-docker
 ```
 
-## Online visualization
+##  Results
+
+The previous command generates a results folder that contains the results of the analysis shown in the paper:
+
+* A figure created using [Gviz](https://bioconductor.org/packages/release/bioc/html/Gviz.html) displaying the mouse feeding behavior and mouse accumulated food intakes within 30 minutes time-windows displayed as a heatmap.   
+* A figure created using [Sushi](https://bioconductor.org/packages/release/bioc/html/Sushi.html) rendering the same layout as in the previous figure.
+* A folder containing all the necessary files to render the raw feeding behavior and the the accumulated food intakes using [IGV](http://software.broadinstitute.org/software/igv/). Data is separated in folders corresponding to each mouse group.
+* A plot comparing the preference for the high-fat group of the different mouse group. 
+* A folder named **files** which contains the complete set of files needed to visualize the data using Shiny-pergola as explained below. 
+
+## Online Shiny-Pergola visualization
 
 #### shiny-pergola config file
 
