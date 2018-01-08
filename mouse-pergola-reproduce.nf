@@ -1,8 +1,8 @@
 #!/usr/bin/env nextflow
 
 /*
- *  Copyright (c) 2014-2017, Centre for Genomic Regulation (CRG).
- *  Copyright (c) 2014-2017, Jose Espinosa-Carrasco and the respective authors.
+ *  Copyright (c) 2014-2018, Centre for Genomic Regulation (CRG).
+ *  Copyright (c) 2014-2018, Jose Espinosa-Carrasco and the respective authors.
  *
  *  This file is part of Pergola.
  *
@@ -35,7 +35,7 @@ params.exp_info       = "$baseDir/small_data/mappings/exp_info_small.txt"
 params.output         = "files/"
 params.image_format   = "tiff"
 
-log.info "Mouse - Pergola - Reproduce  -  version 0.1"
+log.info "Mouse - Pergola - Reproduce  -  version 0.1.1"
 log.info "====================================="
 log.info "mice recordings        : ${params.recordings}"
 log.info "mappings               : ${params.mappings}"
@@ -50,7 +50,7 @@ log.info "\n"
 // Example command to run the script
 /*
 nextflow run mouse-pergola-reproduce.nf \
-  --recordings='small_data/mice_recordings/' \
+  --recordings='small_data/mouse_recordings/' \
   --mappings='small_data/mappings/b2p.txt' \
   --mappings_bed='small_data/mappings/bed2pergola.txt' \
   --phases='small_data/phases/exp_phases.csv' \
@@ -101,6 +101,9 @@ Channel
     .fromPath( params.recordings )
     .set { mice_files_preference }
 
+/*
+ * Calculates mice preference statistics
+ */
 process stats_by_phase {
 
   	input:
@@ -162,6 +165,9 @@ def igv_files_by_group ( file ) {
 
 }
 
+/*
+ * Converts input behavioral trajectory of mice into BED files (discrete intervals)
+ */
 process convert_bed {
     publishDir params.output_res, mode: 'copy', pattern: "tr*food*.bed", saveAs: this.&igv_files_by_group
 
@@ -309,6 +315,9 @@ longest_phases_dark.subscribe {
     phases_file.copyTo ( result_dir_shiny_p.resolve ( "phases_dark.bed" ) )
 }
 
+/*
+ * Converts input behavioral trajectory of mice into bedGraph files showing a continuous score along time windows (30 min)
+ */
 process convert_bedGraph {
 
     publishDir params.output_res, mode: 'copy', pattern: "tr*food*.bedGraph", saveAs: this.&igv_files_by_group
@@ -331,6 +340,9 @@ bedGraph_out_shiny_p.flatten().subscribe {
     it.copyTo( result_dir_shiny_p.resolve ( ) )
 }
 
+/*
+ * Plots preference of mice for the high-fat food in the different experimental phases
+ */
 process plot_preference {
 
     publishDir "${params.output_res}/preference/", mode: 'copy', overwrite: 'true'
@@ -356,6 +368,9 @@ exp_phases_bed_to_wr2.subscribe {
     it.copyTo( result_dir_shiny_p.resolve ( 'exp_phases.bed' ) )
 }
 
+/*
+ * Renders BED and bedGraph files using Gviz
+ */
 process gviz_visualization {
 
     publishDir "${params.output_res}/gviz", mode: 'copy', overwrite: 'true'
@@ -378,6 +393,9 @@ process gviz_visualization {
   	"""
 }
 
+/*
+ * Renders BED and bedGraph files using Sushi
+ */
 process sushi_visualization {
 
     publishDir "${params.output_res}/sushi", mode: 'copy', overwrite: 'true'

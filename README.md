@@ -30,14 +30,14 @@ wget -O- https://zenodo.org/record/1067839/files/mouse_dataset.tar.gz | tar xz -
 Pull the Docker image use for processing data with Pergola (Pergola and its dependencies installed)
 
 ```bash
-docker pull pergola/pergola@sha256:f7208e45e761dc0cfd3e3915237eb1a96eead6dfa9c8f3a5b2414de9b8df3a3d
+docker pull pergola/pergola@sha256:0737f3e70dde73d0272a0be37e05a36a6fed390c8820c5d2834076b711ab707f
 ```
 
 ## Run nextflow pipeline
 Once data is downloaded, it is possible to reproduce all the results using this command:
 
 ```bash
-NXF_VER=0.26.1 nextflow run mouse-pergola-reproduce.nf \
+NXF_VER=0.26.4 nextflow run mouse-pergola-reproduce.nf \
   --recordings='data/mouse_recordings/' \
   --mappings='data/mappings/b2p.txt' \
   --mappings_bed='data/mappings/bed2pergola.txt' \
