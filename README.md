@@ -44,7 +44,6 @@ NXF_VER=0.26.4 nextflow run mouse-pergola-reproduce.nf \
   --phases='data/phases/exp_phases.csv' \
   --mappings_phase='data/mappings/f2g.txt' \
   --exp_info='data/mappings/exp_info.txt' \
-  --image_format='tiff' \
   -with-docker
 ```
 
