@@ -149,14 +149,8 @@ names (argsL) <- argsDF$V1
 ## Read files bedGraph files
 b2v <- exp_info <- read.table(file.path(experiment_info), header = TRUE, stringsAsFactors=FALSE)
 exp_info$condition <- as.factor(exp_info$condition)
-exp_info$condition <- ordered(exp_info$condition, levels = c("WT food sc",
-                                                             "WT nic food sc",
-                                                             "CB1 food sc",
-                                                             "CB1 nic food sc",
-                                                             "WT food fat",
-                                                             "WT nic food fat",
-                                                             "CB1 food fat",
-                                                             "CB1 nic food fat"))
+exp_info$condition <- ordered(exp_info$condition, levels = c("Control",
+                                                             "HF"))
 b2v <- exp_info
 
 bed_dir <- file.path(path_bed_files)
@@ -236,7 +230,7 @@ col_back_title="brown"
 l_granges_bg <- bed2pergViz (bg2v, exp_info, "bedGraph") 
 
 min_heatmap <- 0
-max_heatmap <- 0.5
+max_heatmap <- 4
 color_min <- 'white'
 color_max <- 'blue'
 
@@ -293,7 +287,7 @@ plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, colour =
                 geom_blank()
 
 ## Adding heatmap scale to the legend
-bedGraphRange <- c(0,0.5)
+bedGraphRange <- c(0,max_heatmap)
 plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, fill = 0)) +
   scale_fill_gradientn (guide = "colorbar",
                         colours = c(color_min, color_max),
@@ -349,11 +343,13 @@ plot_name <- "mice_gviz_viz"
 
 p <- plotTracks(c(g_tr, unlist(l_gr_annotation_tr_bed), unlist(l_gr_data_tr_bg),  phases_tr, unlist(ctracks)),
 	       ##different windows of time selected
-           from=0, to=3628800, # all data
+           from=0, to=1814400, # 21 days
+           # from=0, to=3628800, # all data
            # from=2592000, to=3456000,
            # from=2851200, to=3024000,
            ##range of heatmap data
-           ylim=c(0,0.5), #ori
+           ylim=c(0,max_heatmap), #ori
+           # ylim=c(0,4), #ori
            shape = "box", stacking = "dense",
            fontsize=size_labels, cex=cex_gtrack)
 grid.draw (leg_groups)

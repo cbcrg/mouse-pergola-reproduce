@@ -24,14 +24,14 @@
  * Jose Espinosa-Carrasco. CB-CRG. March 2017
  *
  * Script to reproduce Pergola paper figures of CB1 mice experiment
- */ 
+ */
 
 params.recordings     = "$baseDir/small_data/mouse_recordings/"
 params.mappings       = "$baseDir/small_data/mappings/b2p.txt"
 params.mappings_bed   = "$baseDir/small_data/mappings/bed2pergola.txt"
 params.phases         = "$baseDir/small_data/phases/exp_phases.csv"
 params.mappings_phase = "$baseDir/small_data/mappings/f2g.txt"
-params.exp_info       = "$baseDir/small_data/mappings/exp_info_small.txt"
+params.exp_info       = "$baseDir/small_data/mappings/exp_info.txt"
 params.output         = "files/"
 params.image_format   = "tiff"
 
@@ -59,7 +59,7 @@ nextflow run mouse-pergola-reproduce.nf \
   --image_format='tiff' \
   -with-docker
 */
-    
+
 /*
  * Input parameters validation
  */
@@ -85,7 +85,7 @@ if( !exp_info.exists() ) exit 1, "Missing experimental info file: ${exp_info}"
 image_format = "${params.image_format}"
 
 /*
- * Create a channel for mice recordings 
+ * Create a channel for mice recordings
  */
 Channel
     .fromPath( "${params.recordings}intake*.csv" )
@@ -130,38 +130,18 @@ process stats_by_phase {
 
 def igv_files_by_group ( file ) {
 
-    def map_id_group = [ "wt" : [1,3,5,13,15,17,25,27,29,37,39,41],
-                         "wt_nic" : [7,9,11,19,21,23,31,33,35,43,45,47,48],
-                         "cb1" : [6,8,10,18,20,22,30,32,34,42,44,46],
-                         "cb1_nic" : [2,4,12,14,16,24,26,28,36,38,40] ]
+    def map_id_group = [ "ctrl" : [1,3,5,7,11,13,15,17],
+                         "hf" : [2,4,6,8,10,12,14,16,18] ]
 
     def id = file.split("\\_")[1]
 
     def food = file.split("\\_")[4].split("\\.")[0]
 
-    if ( map_id_group.get("wt").contains(id.toInteger()) && food == "sc" )
-    return "igv/1_wt_food_sc/${file}"
+    if ( map_id_group.get("ctrl").contains(id.toInteger()) && food == "sc" )
+    return "igv/1_ctrl_food_sc/${file}"
 
-    if ( map_id_group.get("wt_nic").contains(id.toInteger()) && food == "sc" )
-    return  "igv/2_wt_nic_food_sc/${file}"
-
-    if ( map_id_group.get("cb1").contains(id.toInteger()) && food == "sc" )
-    return "igv/3_cb1_food_sc/${file}"
-
-    if ( map_id_group.get("cb1_nic").contains(id.toInteger()) && food == "sc" )
-    return  "igv/4_cb1_nic_food_sc/${file}"
-
-    if ( map_id_group.get("wt").contains(id.toInteger()) && food == "fat" )
-    return "igv/5_wt_food_fat/${file}"
-
-    if ( map_id_group.get("wt_nic").contains(id.toInteger()) && food == "fat" )
-    return  "igv/6_wt_nic_food_fat/${file}"
-
-    if ( map_id_group.get("cb1").contains(id.toInteger()) && food == "fat" )
-    return "igv/7_cb1_food_fat/${file}"
-
-    if ( map_id_group.get("cb1_nic").contains(id.toInteger()) && food == "fat" )
-    return  "igv/8_cb1_nic_food_fat/${file}"
+    if ( map_id_group.get("hf").contains(id.toInteger()) && food == "fat" )
+    return  "igv/2_hf_food_fat/${file}"
 
 }
 
@@ -175,20 +155,20 @@ process convert_bed {
   	file ('batch') from mice_files_bed
   	file mapping_file
   	file mapping_bed_file
-  	
-  	output:   	
+
+  	output:
   	file 'tr*food*.bed' into bed_out, bed_out_shiny_p, bed_out_gviz, bed_out_sushi
   	// file 'tr*{water,sac}*.bed' into bed_out_drink
-  	file 'phases_dark.bed' into phases_dark
+  	file 'phases_light.bed' into phases_night
   	file '*.fa' into out_fasta
 
   	"""
-  	pergola_rules.py -i ${batch} -m ${mapping_file} -f bed -nt -e -bl -d all
+  	pergola_rules.py -i ${batch} -m ${mapping_file} -f bed -nt -e -bl -dl food_sc food_fat -d all
 
     shopt -s nullglob
 
-	## wt
-  	for f in {1,3,5,13,15,17,25,27,29,37,39,41}
+	## ctrl
+  	for f in {1,3,5,7,11,13,15,17}
   	do
   	    mkdir -p work_dir
 
@@ -200,10 +180,8 @@ process convert_bed {
   	        mv \${track_int} track_int
   	        echo -e "food_sc\tblack" > dict_color
   	        echo -e "food_fat\tyellow" >> dict_color
-  	        pergola_rules.py -i track_int -m ../${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color'
+  	        pergola_rules.py -i track_int -m ../${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color' -dl food_sc food_fat -d all
   	        in_f_sc=`ls tr_chr1*food_sc.bed`
-            in_f_fat=`ls tr_chr1*food_fat.bed`
-            mv "\$in_f_fat" "`echo \$in_f_fat | sed s/chr1/\${f}/`"
             mv "\$in_f_sc" "`echo \$in_f_sc | sed s/chr1/\${f}/`"
   	        cd ..
   	        mv work_dir/tr*.bed ./
@@ -211,8 +189,8 @@ process convert_bed {
         fi
   	done
 
-    ## wt_nic
-  	for f in {7,9,11,19,21,23,31,33,35,43,45,47,48}
+    ## hf
+  	for f in {2,4,6,8,10,12,14,16,18}
   	do
   	    mkdir -p work_dir
 
@@ -224,59 +202,10 @@ process convert_bed {
   	        mv \${track_int} track_int
             echo -e "food_sc\torange" > dict_color
   	        echo -e "food_fat\tblue" >> dict_color
-            pergola_rules.py -i track_int -m ../${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color'
-            in_f_sc=`ls tr_chr1*food_sc.bed`
-            in_f_fat=`ls tr_chr1*food_fat.bed`
+            pergola_rules.py -i track_int -m ../${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color' -dl food_sc food_fat -d all
+            # in_f_fat=`ls tr_chr1*food_fat.bed`
+            in_f_fat=`ls tr_chr1*food_fat*.bed`
             mv "\$in_f_fat" "`echo \$in_f_fat | sed s/chr1/\${f}/`"
-            mv "\$in_f_sc" "`echo \$in_f_sc | sed s/chr1/\${f}/`"
-            cd ..
-            mv work_dir/tr*.bed ./
-            mv work_dir/*.fa ./
-        fi
-  	done
-
-    ## cb1
-  	for f in {6,8,10,18,20,22,30,32,34,42,44,46}
-  	do
-  	    mkdir -p work_dir
-
-        files=( tr_"\$f"_* )
-
-  	    if (( \${#files[@]} )); then
-            cd work_dir
-            track_int=`ls ../"tr_"\$f"_"*`
-  	        mv \${track_int} track_int
-            echo -e "food_sc\tcyan" > dict_color
-  	        echo -e "food_fat\tred" >> dict_color
-            pergola_rules.py -i track_int -m ../${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color'
-            in_f_sc=`ls tr_chr1*food_sc.bed`
-            in_f_fat=`ls tr_chr1*food_fat.bed`
-            mv "\$in_f_fat" "`echo \$in_f_fat | sed s/chr1/\${f}/`"
-            mv "\$in_f_sc" "`echo \$in_f_sc | sed s/chr1/\${f}/`"
-            cd ..
-            mv work_dir/tr*.bed ./
-            mv work_dir/*.fa ./
-        fi
-  	done
-
-  	## cb1_nic
-  	for f in {2,4,12,14,16,24,26,28,36,38,40}
-  	do
-  	    mkdir -p work_dir
-
-  	    files=( tr_"\$f"_* )
-
-  	    if (( \${#files[@]} )); then
-            cd work_dir
-            track_int=`ls ../"tr_"\$f"_"*`
-  	        mv \${track_int} track_int
-            echo -e "food_sc\tgreen" > dict_color
-  	        echo -e "food_fat\tpink" >> dict_color
-            pergola_rules.py -i track_int -m ../${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color'
-            in_f_sc=`ls tr_chr1*food_sc.bed`
-            in_f_fat=`ls tr_chr1*food_fat.bed`
-            mv "\$in_f_fat" "`echo \$in_f_fat | sed s/chr1/\${f}/`"
-            mv "\$in_f_sc" "`echo \$in_f_sc | sed s/chr1/\${f}/`"
             cd ..
             mv work_dir/tr*.bed ./
             mv work_dir/*.fa ./
@@ -299,6 +228,7 @@ bed_out_shiny_p.flatten().subscribe {
 
 result_dir_IGV = file("results/igv/")
 
+
 longest_fasta = out_fasta
                    .max { it.size() }
 
@@ -307,7 +237,7 @@ longest_fasta.subscribe {
     fasta_file.copyTo ( result_dir_IGV.resolve ( "mice.fa" ) )
 }
 
-longest_phases_dark = phases_dark
+longest_phases_dark = phases_night
                         .max { it.size() }
 
 longest_phases_dark.subscribe {
@@ -327,12 +257,12 @@ process convert_bedGraph {
   	file mapping_file_bG
   	val max from max_time.first()
 
-  	output:   	
+  	output:
   	file 'tr*food*.bedGraph' into bedGraph_out, bedGraph_out_shiny_p, bedGraph_out_gviz, bedGraph_out_sushi
-  	file 'tr*{water,sac}*.bedGraph' into bedGraph_out_drink
-  	
+  	//file 'tr*{water,sac}*.bedGraph' into bedGraph_out_drink
+
   	"""
-  	pergola_rules.py -i ${batch_bg} -m ${mapping_file_bG} -max ${max} -f bedGraph -w 1800 -nt -e
+  	pergola_rules.py -i ${batch_bg} -m ${mapping_file_bG} -max ${max} -f bedGraph -w 1800 -nt -e -dl food_sc food_fat -d all
   	"""
 }
 

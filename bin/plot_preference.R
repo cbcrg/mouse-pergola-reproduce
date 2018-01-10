@@ -122,20 +122,24 @@ for (bed_file in files) {
   info = file.info (bed_file)
   if (info$size == 0) { next }
   df <- read.csv(bed_file, header=F, sep="\t")
+  # KO_cb1_saline
   phenotype <- gsub ("tr_", "", unlist(strsplit(bed_file, split=".",fixed=T))[1])
+  # print (phenotype) #del
   genotype <- unlist(strsplit(phenotype, split="_",fixed=T))[1]
+  # print (genotype) #del
   mouse <- gsub ("tr_", "", unlist(strsplit(bed_file, split=".",fixed=T))[2])
   data_type <- gsub ("tr_", "", unlist(strsplit(bed_file, split=".",fixed=T))[3])
   data_type <- gsub ("food_fat", "HF", data_type)
   data_type <- gsub ("food_sc", "SC", data_type)
   phase <- gsub ("tr_", "", unlist(strsplit(bed_file, split=".",fixed=T))[4])
   exp_phase <- gsub ("tr_", "", unlist(strsplit(bed_file, split=".",fixed=T))[5])
-  df$phenotype <- phenotype
-  df$phenotype <- factor(df$phenotype, levels=c("wt_saline", "wt_nicotine", "KO_cb1_saline", "KO_cb1_nicotine"),
-                         labels=c("wt_saline", "wt_nicotine", "KO_cb1_saline", "KO_cb1_nicotine"))                                                  
+  # df$phenotype <- phenotype #del
+  # df$phenotype <- factor(df$phenotype, levels=c("ctrl", "hf"), #del
+  #                        labels=c("ctrl", "hf"))
   df$mouse <- mouse
   df$genotype <- genotype
-  df$genotype <- factor(df$genotype, levels=c("wt", "KO"), labels=c("wt", "KO"))
+  # df$genotype <- factor(df$genotype, levels=c("wt", "KO"), labels=c("wt", "KO"))
+    df$genotype <- factor(df$genotype, levels=c("ctrl", "hf"), labels=c("ctrl", "hf"))
   df$mouse <- mouse
   df$data_type <- data_type
   df$phase <- phase
@@ -143,13 +147,14 @@ for (bed_file in files) {
   df$group2plot <- paste (phase, data_type)
   data.frame_bed <- rbind(data.frame_bed, df)
 }
+# print (data.frame_bed) #del
 setwd(pwd)
 
 ## animal 29 has not data for nicotine treatment
 ## 3799 chr1  0  1 no_hits  0  0     wt_saline    29        SC   day  Nicotine treatment     day SC
-to_replace <- subset(data.frame_bed, mouse=='1' & exp_phase=="Nicotine treatment" & data_type=="SC")
-to_replace$V6 <- 0
-data.frame_bed <- rbind(to_replace, data.frame_bed)
+# to_replace <- subset(data.frame_bed, mouse=='1' & exp_phase=="Nicotine treatment" & data_type=="SC")
+# to_replace$V6 <- 0
+# data.frame_bed <- rbind(to_replace, data.frame_bed)
 
 #######
 # In the analysis of the original paper they substitute empty values for an animal
@@ -180,7 +185,7 @@ for (i in c(1:length (data.frame_bed$exp_phase))) {
 }
 
 ## delete the first 4 days of the nicotine tt -> injection
-data.frame_bed <- subset (data.frame_bed, V4!="day_15" & V4!="day_16" & V4!="day_17" & V4!="day_18")
+# data.frame_bed <- subset (data.frame_bed, V4!="day_15" & V4!="day_16" & V4!="day_17" & V4!="day_18")
 
 ## color blind friendly palette
 {
@@ -218,7 +223,7 @@ name_file <- "plot"
 #                       max='Maximun intake', '')
 plot_title <- "Preference"
 ## Combined phases as in the original paper
-tbl_stat_mean_comb_ph <- with (data.frame_bed, aggregate (cbind (V6), list (phenotype=phenotype, data_type=data_type,
+tbl_stat_mean_comb_ph <- with (data.frame_bed, aggregate (cbind (V6), list (genotype=genotype, data_type=data_type,
                                                                     exp_phase=exp_phase),
                                                   FUN=function (x) c (mean=mean(x))))
 
@@ -229,7 +234,7 @@ tbl_stat_mean_comb_ph$mean <- tbl_stat_mean_comb_ph$V6
 #preference <- mean_intake HF  / (mean_intake SC + mean_intake HF) They do animal by animal and file by file
 
 # same thing but only with basal
-data.frame_bed_basal <- subset (data.frame_bed, exp_phase=="Basal")
+data.frame_bed_basal <- subset (data.frame_bed, exp_phase=="Habituation")
 
 {
   if (stat == 'count' | stat == 'sum'){
@@ -237,14 +242,14 @@ data.frame_bed_basal <- subset (data.frame_bed, exp_phase=="Basal")
     data.frame_bed$value <- data.frame_bed$V6
     preference <- data.frame_bed %>%
       # they do in functin of the last one (data types)
-      group_by(mouse, phenotype, exp_phase, phase,  V2, V3, data_type) %>%
+      group_by(mouse, genotype, exp_phase, phase,  V2, V3, data_type) %>%
       summarise(mean=mean(value)) %>%
       mutate(pref=mean/sum(mean)*100)
 
     preference <- as.data.frame(preference)
     preference <- preference[!is.na(preference$pref),]
 
-    preference_mean_comb_ph <- with (preference, aggregate (cbind (pref), list (phenotype=phenotype, data_type=data_type,
+    preference_mean_comb_ph <- with (preference, aggregate (cbind (pref), list (genotype=genotype, data_type=data_type,
                                                                                 exp_phase=exp_phase),
                                                               FUN=function (x) c (mean=mean(x))))
 
@@ -268,16 +273,16 @@ data.frame_bed_basal <- subset (data.frame_bed, exp_phase=="Basal")
     name_file <- paste ("preference", ".", image_format, sep="")
 
     ## Join the two tables
-    preference_mean_comb_ph <- subset (preference_mean_comb_ph, exp_phase!="Basal")
-    colnames(preference_mean_comb_ph_basal)[1] <- "phenotype"
+    preference_mean_comb_ph <- subset (preference_mean_comb_ph, exp_phase!="Habituation")
+    colnames(preference_mean_comb_ph_basal)[1] <- "genotype"
     preference_mean_comb_ph_plot <- rbind(preference_mean_comb_ph_basal, preference_mean_comb_ph)
     
     ## Changing labels and reordering phenotypes for plotting
-    phenotype <- as.factor(gsub("cb1 ", "", gsub("wt", "WT", gsub("_", " ", preference_mean_comb_ph_plot$phenotype))))
-    phenotype <- ordered(phenotype, levels = c("WT","KO", "WT saline", "WT nicotine", "KO saline", "KO nicotine"))
-    preference_mean_comb_ph_plot$phenotype <- phenotype
+    # phenotype <- as.factor(gsub("cb1 ", "", gsub("wt", "WT", gsub("_", " ", preference_mean_comb_ph_plot$phenotype))))
+    # phenotype <- ordered(genotype, levels = c("WT","KO", "WT saline", "WT nicotine", "KO saline", "KO nicotine"))
+    # preference_mean_comb_ph_plot$phenotype <- phenotype
        
-    ggplot(data=preference_mean_comb_ph_plot, aes(x=phenotype, y=pref, fill=data_type)) +
+    ggplot(data=preference_mean_comb_ph_plot, aes(x=genotype, y=pref, fill=data_type)) +
       geom_bar(stat="identity", position="fill") +
       scale_fill_manual(values = c(cbb_palette[2], cbb_palette[1])) +
       scale_y_continuous (breaks=seq(0, 1,0.2)) +

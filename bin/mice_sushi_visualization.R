@@ -139,23 +139,14 @@ color_heatmap <- 'blue'
 
 #############################
 ## Read files bed files
-# experiment_info <- "/Users/jespinosa/git/pergola-paper-reproduce/cb1_mice/exp_info.txt" #del
 b2v <- exp_info <- read.table(file.path(experiment_info), header = TRUE, stringsAsFactors=FALSE)
 exp_info$condition <- as.factor(exp_info$condition)
-exp_info$condition <- ordered(exp_info$condition, levels = c("WT food sc",
-                                                             "WT nic food sc", 
-                                                             "CB1 food sc", 
-                                                             "CB1 nic food sc",
-                                                             "WT food fat",
-                                                             "WT nic food fat",
-                                                             "CB1 food fat",                                                             
-                                                             "CB1 nic food fat"))
+exp_info$condition <- ordered(exp_info$condition, levels = c(c("Control",
+                                                               "HF")))
 b2v <- exp_info
 
 # Reorder by group to make all tracks of a same group to appear together
 exp_info <- exp_info[order(exp_info$condition),]
-
-# path_bed_files <- "/Users/jespinosa/scratch/0a/4bfed76ab7d32e001ac380fdf88837/bed_dir" #del
 
 bed_dir <- file.path(path_bed_files)
 
@@ -185,13 +176,9 @@ data_bed_events <- lapply(b2v$path, function (bed) {
     
     return (bed_tbl)
 })
-# l_gr_color #del
-# levels(exp_info$condition)
-# names(data_bed_events)
 
 #############################
 ## Read files bedGraph files
-# path_bedG_files <- "/Users/jespinosa/scratch/0a/4bfed76ab7d32e001ac380fdf88837/bedg_dir" #del
 bedg_dir <- file.path(path_bedG_files)
 perg_bedg_files <- sapply(exp_info$sample, function(id) file.path(bedg_dir, paste(id, ".bedGraph", sep="")))
 
@@ -213,22 +200,20 @@ data_bedg_win <- lapply(bg2v$path, function (bedg) {
 })
 
 ## I set max_value to 0.5 to make the representation like in the Gviz case
-max_value <- 4
+max_value <- 11
 
 ## standardize values to a range of 0 to 1
-unite_scale <- function (v, min=0, max=0.5) {    
+unite_scale <- function (v, min=0, max=0.5) {
     ifelse(v > max, return(1), return ((v - min) / (max - min)))    
 }
 
 # parameters for sushi
 chrom            = "chr1"
 chromstart       = 0
-chromend         = 100000
-chromend         = 3635631
+chromend         = 1814400
 
 ###########################################
 ## Read files bed phases files if available
-# phases_file <- "/Users/jespinosa/scratch/80/830f65cd39c3f6ae13d493c7e7ed11/exp_phases_sushi" #del
 {
     if (!is.null (phases_file)) {
         bed_phases <- read.csv(file=phases_file, header=FALSE, sep="\t", stringsAsFactors=FALSE)

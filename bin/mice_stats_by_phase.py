@@ -38,17 +38,19 @@ from pergola import mapping
 from pergola import intervals
 from pergola import tracks
 
-_stats_available = ['mean', 'count', 'sum', 'max', 'min', 'median' ]
+_stats_available = ['mean', 'count', 'sum', 'max', 'min', 'median']
 _behaviors_available = ['feeding', 'drinking']
 
 parser = ArgumentParser(description='File input and options to process data')
-parser.add_argument('-f','--file_mice_behavior', help='Files containing feeding/drinking behaviors of mice', required=True, nargs='+')
-parser.add_argument('-m','--mapping_file', help='Mapping file to read mice behavioral files', required=True)
-parser.add_argument('-p','--phases_exp_file', help='Experiment phases file', required=True)
-parser.add_argument('-mp','--mapping_phases', help='Mapping file of experiment phases file', required=True)
-parser.add_argument('-s','--statistic', help='Choose one of the possible statistical available on Bedtools map option',
+parser.add_argument('-f', '--file_mice_behavior', help='Files containing feeding/drinking behaviors of mice',
+                    required=True, nargs='+')
+parser.add_argument('-m', '--mapping_file', help='Mapping file to read mice behavioral files', required=True)
+parser.add_argument('-p', '--phases_exp_file', help='Experiment phases file', required=True)
+parser.add_argument('-mp', '--mapping_phases', help='Mapping file of experiment phases file', required=True)
+parser.add_argument('-s', '--statistic', help='Choose one of the possible statistical available on Bedtools map option',
                     required=True, choices=_stats_available)
-parser.add_argument('-b','--behavioral_type', help='Choose whether to work with drinking or feeding mice behavioral data',
+parser.add_argument('-b', '--behavioral_type',
+                    help='Choose whether to work with drinking or feeding mice behavioral data',
                     required=True, choices=_behaviors_available)
 
 args = parser.parse_args()
@@ -69,12 +71,12 @@ statistic = args.statistic
 if args.behavioral_type == "feeding":
     data_type_1 = "food_sc"
     data_type_2 = "food_fat"
-    data_type_col = {data_type_1: 'orange', data_type_2:'black'}
+    data_type_col = {data_type_1: 'blue', data_type_2: 'red'}
 ### Drinking data
 elif args.behavioral_type == 'drinking':
     data_type_1 = "water"
     data_type_2 = "saccharin"
-    data_type_col = {data_type_1: 'blue', data_type_2:'red'}
+    data_type_col = {data_type_1: 'blue', data_type_2: 'red'}
 else:
     print >> stderr, "Behavioral data type not available in script, please try again with \"drinking\" or \"feeding\""
 
@@ -99,39 +101,30 @@ for f in args.file_mice_behavior:
 
 stdout.write(str(end_time))
 
-list_wt_sal = [1,3,5,13,15,17,25,27,29,37,39,41]
-list_wt_nic = [7,9,11,19,21,23,31,33,35,43,45,47,48]
-list_KO_cb1_sal = [6,8,10,18,20,22,30,32,34,42,44,46]
-list_KO_cb1_nic = [2,4,12,14,16,24,26,28,36,38,40]
+list_ctrl = [1, 3, 5, 7, 9, 11, 13, 15, 17]
+list_hf = [2, 4, 6, 8, 10, 12, 14, 16, 18]
+# list_KO_cb1_sal = [6,8,10,18,20,22,30,32,34,42,44,46]
+# list_KO_cb1_nic = [2,4,12,14,16,24,26,28,36,38,40]
 
 bed_dict = dict()
 
-bed_dict ['wt_saline'] = {}
-bed_dict ['wt_nicotine'] = {}
-bed_dict ['KO_cb1_saline'] = {}
-bed_dict ['KO_cb1_nicotine'] = {}
+bed_dict['ctrl'] = {}
+bed_dict['hf'] = {}
+# bed_dict ['KO_cb1_saline'] = {}
+# bed_dict ['KO_cb1_nicotine'] = {}
 
-bed_dict ['wt_saline'][data_type_1] = data_read_all_batches.convert(mode="bed", data_types=[data_type_1],
-                                                                    color_restrictions=data_type_col, tracks=list_wt_sal)
-bed_dict ['wt_saline'][data_type_2] = data_read_all_batches.convert(mode="bed", data_types=[data_type_2],
-                                                                    color_restrictions=data_type_col, tracks=list_wt_sal)
-bed_dict ['wt_nicotine'][data_type_1] = data_read_all_batches.convert(mode="bed", data_types=[data_type_1],
-                                                                      color_restrictions=data_type_col, tracks=list_wt_nic)
-bed_dict ['wt_nicotine'][data_type_2] = data_read_all_batches.convert(mode="bed", data_types=[data_type_2],
-                                                                      color_restrictions=data_type_col, tracks=list_wt_nic)
-
-bed_dict ['KO_cb1_saline'][data_type_1] = data_read_all_batches.convert(mode="bed", data_types=[data_type_1],
-                                                                        color_restrictions=data_type_col, tracks=list_KO_cb1_sal)
-bed_dict ['KO_cb1_saline'][data_type_2] = data_read_all_batches.convert(mode="bed", data_types=[data_type_2],
-                                                                        color_restrictions=data_type_col, tracks=list_KO_cb1_sal)
-bed_dict ['KO_cb1_nicotine'][data_type_1] =  data_read_all_batches.convert(mode="bed", data_types=[data_type_1],
-                                                                           color_restrictions=data_type_col, tracks=list_KO_cb1_nic)
-bed_dict ['KO_cb1_nicotine'][data_type_2] =  data_read_all_batches.convert(mode="bed", data_types=[data_type_2],
-                                                                           color_restrictions=data_type_col, tracks=list_KO_cb1_nic)
+bed_dict['ctrl'][data_type_1] = data_read_all_batches.convert(mode="bed", data_types=[data_type_1],
+                                                              color_restrictions=data_type_col, tracks=list_ctrl)
+bed_dict['ctrl'][data_type_2] = data_read_all_batches.convert(mode="bed", data_types=[data_type_2],
+                                                              color_restrictions=data_type_col, tracks=list_ctrl)
+bed_dict['hf'][data_type_1] = data_read_all_batches.convert(mode="bed", data_types=[data_type_1],
+                                                            color_restrictions=data_type_col, tracks=list_hf)
+bed_dict['hf'][data_type_2] = data_read_all_batches.convert(mode="bed", data_types=[data_type_2],
+                                                            color_restrictions=data_type_col, tracks=list_hf)
 
 # Generating sequence of days without light and dark phases
 mapping.write_period_seq(end=end_time, delta=86400, tag="day", name_file="days_seq")
-mapping.write_cytoband(start=0, end=end_time, track_line=False, lab_bed=False)
+mapping.write_cytoband(start=0, end=end_time, start_phase="dark", track_line=False, lab_bed=False)
 
 days_bed_f = "days_seq.bed"
 
@@ -141,7 +134,7 @@ days_bed = pybedtools.BedTool(days_bed_f)
 mapping_data_phases = mapping.MappingInfo(args.mapping_phases)
 
 int_exp_phases = intervals.IntData(args.phases_exp_file, map_dict=mapping_data_phases.correspondence)
- 
+
 data_read_exp_phases = int_exp_phases.read(relative_coord=True)
 
 d_exp_phases_bed2file = data_read_exp_phases.convert(mode="bed", data_types_actions="all")
@@ -170,6 +163,9 @@ for exp_group, dict_exp_gr in bed_dict.iteritems():
                 if exp_phase_events_bed.count() == 0:
                     # When there is any interval we set the mean to zero
                     list_no_intervals = [("chr1", 0, 1, "no_hits", 0, 0)]
-                    pybedtools.BedTool(list_no_intervals).saveas('tr_' + exp_group + '.' + '.'.join(tr) + ".day." + exp_phase + ".bed")
+                    pybedtools.BedTool(list_no_intervals).saveas(
+                        'tr_' + exp_group + '.' + '.'.join(tr) + ".day." + exp_phase + ".bed")
                 else:
-                    days_bed.map(exp_phase_events_bed, c=5, o=statistic, null=0).intersect(pybedtools.BedTool(exp_phase + ".bed")).saveas ('tr_' + exp_group + '.' + '.'.join(tr) + ".day." + exp_phase + ".bed")
+                    days_bed.map(exp_phase_events_bed, c=5, o=statistic, null=0).intersect(
+                        pybedtools.BedTool(exp_phase + ".bed")).saveas(
+                        'tr_' + exp_group + '.' + '.'.join(tr) + ".day." + exp_phase + ".bed")
