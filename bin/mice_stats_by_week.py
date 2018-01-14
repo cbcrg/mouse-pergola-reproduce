@@ -19,7 +19,7 @@
 #  along with Pergola.  If not, see <http://www.gnu.org/licenses/>.
 
 ################################################################
-### Jose A Espinosa. CSN/CB-CRG Group. June 2016             ###
+### Jose A Espinosa. CSN/CB-CRG Group. Jan 2018              ###
 ################################################################
 ### Script creates BedTools objects from a file containing   ###
 ### mice feeding behavior and uses tools from pybedtools to  ###
@@ -71,7 +71,9 @@ statistic = args.statistic
 if args.behavioral_type == "feeding":
     data_type_1 = "food_sc"
     data_type_2 = "food_fat"
+    data_type_joined = ["food_sc", "food_fat"]
     data_type_col = {data_type_1: 'blue', data_type_2: 'red'}
+
 ### Drinking data
 elif args.behavioral_type == 'drinking':
     data_type_1 = "water"
@@ -91,6 +93,13 @@ for f in args.file_mice_behavior:
 
     data_read = int_data.read(relative_coord=True)
 
+    #####
+    ##########
+    chr_file_n = "chrom"
+    mapping.write_chr_sizes(data_read, file_n=chr_file_n)
+    chr_file = chr_file_n + ".sizes"
+    ##########
+
     if end_time < int_data.max - int_data.min:
         end_time = int_data.max - int_data.min
 
@@ -102,33 +111,44 @@ for f in args.file_mice_behavior:
 stdout.write(str(end_time))
 
 list_ctrl = [1, 3, 5, 7, 9, 11, 13, 15, 17]
-list_hf = [2, 4, 6, 8, 10, 12, 14, 16, 18]
-# list_KO_cb1_sal = [6,8,10,18,20,22,30,32,34,42,44,46]
-# list_KO_cb1_nic = [2,4,12,14,16,24,26,28,36,38,40]
+list_hf = [2, 4, 8, 10, 12, 14, 16, 18]
 
 bed_dict = dict()
 
 bed_dict['ctrl'] = {}
 bed_dict['hf'] = {}
-# bed_dict ['KO_cb1_saline'] = {}
-# bed_dict ['KO_cb1_nicotine'] = {}
 
-bed_dict['ctrl'][data_type_1] = data_read_all_batches.convert(mode="bed", data_types=[data_type_1],
+# bed_dict['ctrl'][data_type_1] = data_read_all_batches.convert(mode="bed", data_types=[data_type_1],
+#                                                               color_restrictions=data_type_col, tracks=list_ctrl)
+# bed_dict['ctrl'][data_type_2] = data_read_all_batches.convert(mode="bed", data_types=[data_type_2],
+#                                                               color_restrictions=data_type_col, tracks=list_ctrl)
+# bed_dict['hf'][data_type_1] = data_read_all_batches.convert(mode="bed", data_types=[data_type_1],
+#                                                             color_restrictions=data_type_col, tracks=list_hf)
+# bed_dict['hf'][data_type_2] = data_read_all_batches.convert(mode="bed", data_types=[data_type_2],
+#                                                             color_restrictions=data_type_col, tracks=list_hf)
+
+#### OJO CON ESTO PARA EL RESTO DE LA EJECUCION
+bed_dict['ctrl']['food'] = data_read_all_batches.convert(mode="bed", data_types=data_type_joined, data_types_actions="all",
                                                               color_restrictions=data_type_col, tracks=list_ctrl)
-bed_dict['ctrl'][data_type_2] = data_read_all_batches.convert(mode="bed", data_types=[data_type_2],
-                                                              color_restrictions=data_type_col, tracks=list_ctrl)
-bed_dict['hf'][data_type_1] = data_read_all_batches.convert(mode="bed", data_types=[data_type_1],
+# print bed_dict['ctrl']['food']
+
+bed_dict['hf']['food'] = data_read_all_batches.convert(mode="bed", data_types=data_type_joined, data_types_actions="all",
                                                             color_restrictions=data_type_col, tracks=list_hf)
-bed_dict['hf'][data_type_2] = data_read_all_batches.convert(mode="bed", data_types=[data_type_2],
-                                                            color_restrictions=data_type_col, tracks=list_hf)
+# print bed_dict['hf']['food']
 
-# Generating sequence of days without light and dark phases
-mapping.write_period_seq(end=end_time, delta=86400, tag="day", name_file="days_seq")
-mapping.write_cytoband(start=0, end=end_time, start_phase="dark", track_line=False, lab_bed=False)
 
-days_bed_f = "days_seq.bed"
+# bed_dict['ctrl'][data_type_1] = data_read_all_batches.convert(mode="bed", data_types=[data_type_1],
+#                                                               color_restrictions=data_type_col, tracks=list_ctrl)
 
-days_bed = pybedtools.BedTool(days_bed_f)
+# Generating sequence of days without light and dark phases #del
+mapping.write_period_seq(end=end_time, delta=86400, tag="day", name_file="days_seq") #del
+mapping.write_cytoband(start=0, end=end_time, start_phase="dark", track_line=False, lab_bed=False) #del
+days_bed_f = "days_seq.bed" #del
+days_bed = pybedtools.BedTool(days_bed_f) #del
+
+## weeks
+mapping.write_period_seq(end=end_time, delta=604800, tag="week", name_file="weeks_seq", lab_bed=True, track_line=True)
+weeks_bed_f = "weeks_seq.bed"
 
 ## Reading experimental phases from csv file
 mapping_data_phases = mapping.MappingInfo(args.mapping_phases)
@@ -143,11 +163,50 @@ d_exp_phases_bed2file[d_exp_phases_bed2file.keys()[0]].save_track(bed_label="Tru
 
 d_exp_phases_bed = data_read_exp_phases.convert(mode="bed", data_types_actions='one_per_channel')
 
+
+def length_bed (b):
+    """
+    calculates length of bed items and dumps it on the score field
+    """
+    b.score = b.end - b.start
+    return b
+
+def rate_bed (b):
+    """
+    calculates the eating rate by divinding by score by the length of bed items and dumps it on the score field
+    """
+    b.score = str(float(b.score) / (b.end - b.start))
+    return b
+
 for exp_group, dict_exp_gr in bed_dict.iteritems():
 
     for data_type, dict_bed in dict_exp_gr.iteritems():
         for tr, bed in dict_bed.iteritems():
             bed_BedTools = bed.create_pybedtools()
+
+            ### bouts per week
+            weeks_bed = pybedtools.BedTool(weeks_bed_f)
+            weeks_bed.intersect(bed_BedTools, c=True).moveto("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + "n_bouts.tbl") #OK
+
+            ### mean value
+            statistic="mean"
+            weeks_bed.map(bed_BedTools, c=5, o=statistic, null=0).moveto("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + 'mean.tbl') #OK
+
+            ### eating rate
+            weeks_bed.map(bed_BedTools.each(rate_bed), c=5, o=statistic, null=0).moveto("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + 'rate.tbl') #OK
+
+            ### meal duration
+            weeks_bed.map(bed_BedTools.each(length_bed), c=5, o=statistic, null=0).moveto("tr_"+ tr[0] + '.'+ exp_group+ '.' + data_type + '.' + 'duration.tbl') #OK
+
+            ### intermeal interval
+            # bed_BedTools.moveto("tr_"+ tr[0] + '.ori')
+            # bed_BedTools = pybedtools.BedTool("tr_"+ tr[0] + '.ori')
+            # bed_BedTools.complement(g=chr_file).moveto("tr_"+ tr[0] + '.' + "intermeal")
+
+            # weeks_bed.intersect(bed_BedTools.complement(g=chr_file)).each(length_bed).moveto("tr_"+ tr[0] + '.' + "test.intermeal")
+            # bed_BedTools.complement(g=chr_file).moveto("tr_"+ tr[0] + '.' + "intermeal")
+            weeks_bed.map(weeks_bed.intersect(bed_BedTools.complement(g=chr_file)).each(length_bed).sort(), c=5, o=statistic, null=0)\
+                .moveto("tr_"+ tr[0] + '.' + exp_group+ '.' + data_type + '.'  + 'intermeal_time.tbl') #OK
 
             for key, bed_phase in d_exp_phases_bed.iteritems():
                 exp_phase = key[1]

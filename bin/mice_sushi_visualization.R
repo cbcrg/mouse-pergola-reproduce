@@ -1,7 +1,8 @@
 #!/usr/bin/env Rscript
 
-#  Copyright (c) 2014-2017, Centre for Genomic Regulation (CRG).
-#  Copyright (c) 2014-2017, Jose Espinosa-Carrasco and the respective authors.
+#  Copyright (c) 2014-2018, Centre for Genomic Regulation (CRG).
+#  Copyright (c) 2014-2018, Jose Espinosa-Carrasco and the respective authors.
+#  Copyright (c) 2014-2018, Jose Espinosa-Carrasco and the respective authors.
 #
 #  This file is part of Pergola.
 #
@@ -210,7 +211,8 @@ unite_scale <- function (v, min=0, max=0.5) {
 # parameters for sushi
 chrom            = "chr1"
 chromstart       = 0
-chromend         = 1814400
+# chromend         = 1814400
+chromend         = 5443200
 
 ###########################################
 ## Read files bed phases files if available

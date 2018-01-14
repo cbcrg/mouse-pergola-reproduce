@@ -343,8 +343,8 @@ plot_name <- "mice_gviz_viz"
 
 p <- plotTracks(c(g_tr, unlist(l_gr_annotation_tr_bed), unlist(l_gr_data_tr_bg),  phases_tr, unlist(ctracks)),
 	       ##different windows of time selected
-           from=0, to=1814400, # 21 days
-           # from=0, to=5443200, # 9 weeks
+           # from=0, to=1814400, # 21 days
+           from=0, to=5443200, # 9 weeks
            ##range of heatmap data
            ylim=c(0, max_heatmap), #ori
            shape = "box", stacking = "dense",

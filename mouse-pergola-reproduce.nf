@@ -113,25 +113,46 @@ process stats_by_phase {
     file exp_phases
 
   	output:
-  	file 'stats_by_phase' into results_stats_by_phase
+  	//file 'stats_by_phase' into results_stats_by_phase
+  	file 'behaviors_by_week' into d_behaviors_by_week
   	stdout into max_time
     file 'exp_phases' into exp_phases_bed_to_wr, exp_phases_bed_to_wr2
     file 'exp_phases_sushi' into exp_phases_bed_sushi, exp_phases_bed_gviz
 	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz
+    // stdout into test
 
   	"""
-  	mice_stats_by_phase.py -f "${file_preferences}"/intake*.csv -m ${mapping_file} -s "sum" -b feeding -p ${exp_phases} -mp ${mapping_file_phase}
+  	mice_stats_by_week.py -f "${file_preferences}"/intake*.csv -m ${mapping_file} -s "sum" -b feeding -p ${exp_phases} -mp ${mapping_file_phase}
   	mkdir stats_by_phase
+  	mkdir behaviors_by_week
   	cp exp_phases.bed exp_phases
   	tail +2 exp_phases > exp_phases_sushi
   	mv *.bed  stats_by_phase/
+  	mv *.tbl  behaviors_by_week/
   	"""
+}
+
+
+process heatmap {
+    publishDir "${params.output_res}/heatmap/", mode: 'copy', overwrite: 'true'
+
+    input:
+    file behaviors_by_week from d_behaviors_by_week
+
+    output:
+    file "*.${image_format}" into heatmap_behaviors
+
+    """
+    heatmap_behavior.R --path2files=${behaviors_by_week} --image_format=${image_format}
+    """
+
+
 }
 
 def igv_files_by_group ( file ) {
 
     def map_id_group = [ "ctrl" : [1,3,5,7,11,13,15,17],
-                         "hf" : [2,4,6,8,10,12,14,16,18] ]
+                         "hf" : [2,4,8,10,12,14,16,18] ]
 
     def id = file.split("\\_")[1]
 
@@ -190,7 +211,7 @@ process convert_bed {
   	done
 
     ## hf
-  	for f in {2,4,6,8,10,12,14,16,18}
+  	for f in {2,4,8,10,12,14,16,18}
   	do
   	    mkdir -p work_dir
 
@@ -273,6 +294,7 @@ bedGraph_out_shiny_p.flatten().subscribe {
 /*
  * Plots preference of mice for the high-fat food in the different experimental phases
  */
+/*
 process plot_preference {
 
     publishDir "${params.output_res}/preference/", mode: 'copy', overwrite: 'true'
@@ -289,6 +311,7 @@ process plot_preference {
         --image_format=${image_format}
   	"""
 }
+*/
 
 exp_phases_bed_to_wr.subscribe {
     it.copyTo( result_dir_IGV.resolve ( 'exp_phases.bed' ) )
