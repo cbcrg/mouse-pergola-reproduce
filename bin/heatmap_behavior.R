@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
-#  Copyright (c) 2014-2017, Centre for Genomic Regulation (CRG).
-#  Copyright (c) 2014-2017, Jose Espinosa-Carrasco and the respective authors.
+#  Copyright (c) 2014-2018, Centre for Genomic Regulation (CRG).
+#  Copyright (c) 2014-2018, Jose Espinosa-Carrasco and the respective authors.
 #
 #  This file is part of Pergola.
 #
@@ -91,8 +91,6 @@ names (argsL) <- argsDF$V1
 
 source("https://gist.githubusercontent.com/JoseEspinosa/307430167b05e408ac071b8724701abf/raw/06b26f764953ceea53d334190d7b736308e5141d/param_plot_publication.R")
 
-# path2files <- "/Users/jespinosa/scratch/43/f2cf2cac90556bde1f9fe0e12d4854/behaviors_by_week"
-# image_format="tiff"
 pwd <- getwd()
 setwd(path2files)
 files <- list.files(pattern=paste("tr_.*.tbl$", sep=""))
@@ -134,18 +132,11 @@ data.frame_bed.hf$orderOut [which (data.frame_bed.hf$variable == "duration")] <-
 data.frame_bed.hf$orderOut [which (data.frame_bed.hf$variable == "n_bouts")] <-  "4"
 data.frame_bed.hf$orderOut [which (data.frame_bed.hf$variable == "mean")] <-  "5"
 
-data.frame_bed.hf$variable <- gsub("rate", "eating rate", data.frame_bed.hf$variable)
+data.frame_bed.hf$variable <- gsub("rate", "Eating rate", data.frame_bed.hf$variable)
 data.frame_bed.hf$variable <- gsub("duration", "Average duration", data.frame_bed.hf$variable)
 data.frame_bed.hf$variable <- gsub("n_bouts", "Number of meals", data.frame_bed.hf$variable)
-data.frame_bed.hf$variable <- gsub("mean", "average intake", data.frame_bed.hf$variable)
+data.frame_bed.hf$variable <- gsub("mean", "Average intake", data.frame_bed.hf$variable)
 data.frame_bed.hf$variable <- gsub("intermeal_time", "Average intermeal duration", data.frame_bed.hf$variable)
-
-# Function to capitalize each word beginning of a string
-simpleCap <- function(x) {
-  s <- strsplit(x, " ")[[1]]
-  paste(toupper(substring(s, 1,1)), substring(s, 2),
-        sep="", collapse=" ")
-}
 
 heatMapPlotter <- function (table, main="", weekNotation=F, legPos="right", mode="default", xlab="", ylab="")
 {
@@ -194,12 +185,8 @@ heatMapPlotter <- function (table, main="", weekNotation=F, legPos="right", mode
   
   table$period <- as.numeric (table$period)
   table$week <- with (table, reorder (week, period,))
+  table$chVar <- paste (table$channel, table$varOrder, table$variable, sep = " ")
 
-  table$chVar <- paste (sapply (table$channel, simpleCap), table$varOrder, table$variable, sep = " ")
-  
-  #Capitalizing variable for labels      
-  table$variable <-sapply (table$variable, simpleCap)
-  head(table)
   (p <- ggplot (table, aes (week, chVar)) + geom_tile (aes (fill = foldChange),
                                                        colour = "white") + 
       geom_text(aes(label=stars), color="white", size=7) +
@@ -212,7 +199,7 @@ heatMapPlotter <- function (table, main="", weekNotation=F, legPos="right", mode
                             name = legName,
                             rescaler = function(x,...) x,
                             oob = identity) + ggtitle(main) + theme (legend.position = "none"))#no legend
-  base_size <- 9
+  base_size <- 11
   
   p + theme_grey (base_size = base_size) + labs (x = xlab,
                                                  y = ylab) + scale_x_discrete (expand = c(0, 0)) +
@@ -239,5 +226,5 @@ name_file <- paste ("heatmap_behavior_week", ".", image_format, sep="")
 plot_width <- 12
 plot_height <- 10
 setwd(pwd)
-heatMapPlotter (data.frame_bed.hf, main="\n",  weekNotation="N", legPos="right", xlab="\n", ylab="\n")
+heatMapPlotter (data.frame_bed.hf, main="\n",  weekNotation="N", legPos="right", xlab="\nWeeks\n", ylab="\n")
 ggsave (file=name_file, width=plot_width, height=plot_height, dpi=300)
