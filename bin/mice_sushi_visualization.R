@@ -288,7 +288,7 @@ for (bedg_i in seq_along(data_bedg_win)) {
             color= data_bedg_win[[bedg_i]]$color)
     axis(side=2, lwd.tick=0, labels=FALSE, col=data_bed_events[[bedg_i]]$color_axis[1])
 
-    mtext(data_bed_events[[bedg_i]]$id[1], side=2, cex=size_lab, las=1, col=data_bed_events[[bedg_i]]$color_axis[1])
+    mtext(data_bed_events[[bedg_i]]$id[1], side=2, cex=size_lab, las=1, col=data_bed_events[[bedg_i]]$color[1])
 
     i=i+1
     j=j+1
