@@ -35,7 +35,7 @@ params.exp_info       = "$baseDir/small_data/mappings/exp_info.txt"
 params.output         = "files/"
 params.image_format   = "tiff"
 
-log.info "Mouse - Pergola - Reproduce  -  version 0.1.1"
+log.info "Mouse - Pergola - Reproduce  -  version 0.2.0"
 log.info "====================================="
 log.info "mice recordings        : ${params.recordings}"
 log.info "mappings               : ${params.mappings}"
@@ -104,7 +104,7 @@ Channel
 /*
  * Calculates mice preference statistics
  */
-process stats_by_phase {
+process behavior_by_week {
 
   	input:
   	file file_preferences from mice_files_preference
@@ -113,13 +113,11 @@ process stats_by_phase {
     file exp_phases
 
   	output:
-  	//file 'stats_by_phase' into results_stats_by_phase
   	file 'behaviors_by_week' into d_behaviors_by_week
   	stdout into max_time
     file 'exp_phases' into exp_phases_bed_to_wr, exp_phases_bed_to_wr2
     file 'exp_phases_sushi' into exp_phases_bed_sushi, exp_phases_bed_gviz
-	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz
-    // stdout into test
+	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz, days_bed_igv, days_bed_shiny
 
   	"""
   	mice_stats_by_week.py -f "${file_preferences}"/intake*.csv -m ${mapping_file} -s "sum" -b feeding -p ${exp_phases} -mp ${mapping_file_phase}
@@ -132,7 +130,9 @@ process stats_by_phase {
   	"""
 }
 
-
+/*
+ * Creates a heatmap that compares mice feeding behavior of high-fat mice with their controls
+ */
 process heatmap {
     publishDir "${params.output_res}/heatmap/", mode: 'copy', overwrite: 'true'
 
@@ -145,8 +145,6 @@ process heatmap {
     """
     heatmap_behavior.R --path2files=${behaviors_by_week} --image_format=${image_format}
     """
-
-
 }
 
 def igv_files_by_group ( file ) {
@@ -158,11 +156,13 @@ def igv_files_by_group ( file ) {
 
     def food = file.split("\\_")[4].split("\\.")[0]
 
+    def ext = file.split("\\.")[1]
+
     if ( map_id_group.get("ctrl").contains(id.toInteger()) && food == "sc" )
-    return "igv/1_ctrl_food_sc/${file}"
+    return "igv/1_ctrl_food_sc/${id}.${ext}"
 
     if ( map_id_group.get("hf").contains(id.toInteger()) && food == "fat" )
-    return  "igv/2_hf_food_fat/${file}"
+    return  "igv/2_hf_food_fat/${id}.${ext}"
 
 }
 
@@ -189,7 +189,7 @@ process convert_bed {
     shopt -s nullglob
 
 	## ctrl
-  	for f in {1,3,5,7,11,13,15,17}
+  	for f in {1,3,,5,7,11,13,15,17}
   	do
   	    mkdir -p work_dir
 
@@ -200,7 +200,7 @@ process convert_bed {
   	        track_int=`ls ../"tr_"\$f"_"*`
   	        mv \${track_int} track_int
   	        echo -e "food_sc\tblack" > dict_color
-  	        echo -e "food_fat\tyellow" >> dict_color
+  	        echo -e "food_fat\tblack" >> dict_color
   	        pergola_rules.py -i track_int -m ../${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color' -dl food_sc food_fat -d all
   	        in_f_sc=`ls tr_chr1*food_sc.bed`
             mv "\$in_f_sc" "`echo \$in_f_sc | sed s/chr1/\${f}/`"
@@ -210,26 +210,24 @@ process convert_bed {
         fi
   	done
 
-    ## hf
-  	for f in {2,4,8,10,12,14,16,18}
+    for f in {2,4,8,10,12,14,16,18}
   	do
   	    mkdir -p work_dir
 
   	    files=( tr_"\$f"_* )
 
   	    if (( \${#files[@]} )); then
-            cd work_dir
-            track_int=`ls ../"tr_"\$f"_"*`
+  	        cd work_dir
+  	        track_int=`ls ../"tr_"\$f"_"*`
   	        mv \${track_int} track_int
-            echo -e "food_sc\torange" > dict_color
-  	        echo -e "food_fat\tblue" >> dict_color
-            pergola_rules.py -i track_int -m ../${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color' -dl food_sc food_fat -d all
-            # in_f_fat=`ls tr_chr1*food_fat.bed`
-            in_f_fat=`ls tr_chr1*food_fat*.bed`
-            mv "\$in_f_fat" "`echo \$in_f_fat | sed s/chr1/\${f}/`"
-            cd ..
-            mv work_dir/tr*.bed ./
-            mv work_dir/*.fa ./
+  	        echo -e "food_sc\torange" > dict_color
+  	        echo -e "food_fat\torange" >> dict_color
+  	        pergola_rules.py -i track_int -m ../${mapping_bed_file} -c dict_color -f bed -nt -e -nh -s 'chrm' 'start' 'end' 'nature' 'value' 'strain' 'color' -dl food_sc food_fat -d all
+  	        in_f_sc=`ls tr_chr1*food_sc.bed`
+            mv "\$in_f_sc" "`echo \$in_f_sc | sed s/chr1/\${f}/`"
+  	        cd ..
+  	        mv work_dir/tr*.bed ./
+  	        mv work_dir/*.fa ./
         fi
   	done
   	"""
@@ -258,10 +256,7 @@ longest_fasta.subscribe {
     fasta_file.copyTo ( result_dir_IGV.resolve ( "mice.fa" ) )
 }
 
-longest_phases_dark = phases_night
-                        .max { it.size() }
-
-longest_phases_dark.subscribe {
+days_bed_shiny.subscribe {
     phases_file = it
     phases_file.copyTo ( result_dir_shiny_p.resolve ( "phases_dark.bed" ) )
 }
@@ -291,30 +286,12 @@ bedGraph_out_shiny_p.flatten().subscribe {
     it.copyTo( result_dir_shiny_p.resolve ( ) )
 }
 
-/*
- * Plots preference of mice for the high-fat food in the different experimental phases
- */
-/*
-process plot_preference {
-
-    publishDir "${params.output_res}/preference/", mode: 'copy', overwrite: 'true'
-
-    input:
-    file stats_by_phase from results_stats_by_phase
-
-    output:
-    file "*.${image_format}" into plot_preference
-
-  	"""
-    plot_preference.R --stat="sum" \
-        --path2files=${stats_by_phase} \
-        --image_format=${image_format}
-  	"""
-}
-*/
-
 exp_phases_bed_to_wr.subscribe {
     it.copyTo( result_dir_IGV.resolve ( 'exp_phases.bed' ) )
+}
+
+days_bed_igv.subscribe {
+    it.copyTo( result_dir_IGV.resolve ( 'days_nights.bed' ) )
 }
 
 exp_phases_bed_to_wr2.subscribe {

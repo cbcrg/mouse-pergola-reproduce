@@ -186,7 +186,16 @@ perg_bedg_files <- sapply(exp_info$sample, function(id) file.path(bedg_dir, past
 bg2v <- b2v
 bg2v <- dplyr::mutate(bg2v, path = perg_bedg_files)
 
-max_value <- -1000000
+## I set max_value to 0.5 to make the representation like in the Gviz case
+max_value_2 <- 25
+max_value <- 0.5
+
+## standardize values to a range of 0 to 1
+unite_scale <- function (v, min=0, max=max_value, max_2=max_value_2) {
+  if (v >= max_2) { return (1) }
+  else if (v > max && v < max_2) { return ((v - 0) / (max_2 - 0)) }
+  return ((v - 0) / (max - 0))
+}
 
 data_bedg_win <- lapply(bg2v$path, function (bedg) { 
     
@@ -195,24 +204,19 @@ data_bedg_win <- lapply(bg2v$path, function (bedg) {
     bedg_tbl <- read.csv(file=bedg, header=FALSE, sep="\t", stringsAsFactors=FALSE)
 #     max_value <<- max (max_value, max(bedg_tbl$V4))
     bedg_tbl$name <- paste(name_id, "_", type_id, sep="")
-    bedg_tbl$color <- l_gr_color[[exp_info$condition [exp_info$sample == gsub("\\.bedGraph", "", basename(bedg))]]]
-    
+    bedg_tbl$color_axis <- l_gr_color[[exp_info$condition [exp_info$sample == gsub("\\.bedGraph", "", basename(bedg))]]]
+    bedg_tbl$color <- ifelse(bedg_tbl$V4 > 0, opaque(color_heatmap, transparency=sapply(bedg_tbl$V4, unite_scale)), 0)
+
     return (bedg_tbl)
 })
 
-## I set max_value to 0.5 to make the representation like in the Gviz case
-max_value <- 11
-
-## standardize values to a range of 0 to 1
-unite_scale <- function (v, min=0, max=0.5) {
-    ifelse(v > max, return(1), return ((v - min) / (max - min)))    
-}
-
 # parameters for sushi
 chrom            = "chr1"
-chromstart       = 0
-# chromend         = 1814400
-chromend         = 5443200
+# chromstart       = 0
+chromstart       = 26953 # Shift the first hours until 8PM, this way phases look nicer
+# chromend         = 1814400 # first 3 weeks
+chromend         = 1841353
+# chromend         = 5443200 # 9 weeks
 
 ###########################################
 ## Read files bed phases files if available
@@ -230,15 +234,15 @@ plot_name <- "mice_sushi_viz"
 {
     if (image_format == 'tiff' | image_format == 'tif') {
         size_lab <- 0.7
-        tiff(paste(plot_name, ".", image_format, sep=""), height=5300, width=4000)
+        tiff(paste(plot_name, ".", image_format, sep=""), height=16, width=25, units="cm", res=900)
     }
-    else if (image_format == 'pdf') {        
+    else if (image_format == 'pdf') {
         size_lab <- 0.3
-        pdf(paste(plot_name, ".", image_format, sep=""), height=14, width=30)        
+        pdf(paste(plot_name, ".", image_format, sep=""), height=14, width=30)
     }
-    else if (image_format == 'png') {        
+    else if (image_format == 'png') {
         size_lab <- 0.7
-        png(paste(plot_name, ".", image_format, sep=""), height=5300, width=4000)        
+        png(paste(plot_name, ".", image_format, sep=""), height=26, width=40, units="cm", res=900)
     }
     else {
         stop (paste("Unknow image file format:", image_format, sep=" "))
@@ -249,9 +253,6 @@ split.screen (c(2, 1))
 
 ## adding a n empty plots for title
 n=3
-# size_lab <- 0.3
-# split.screen(c(length(data_bedg_win)+n, 1), screen = 1)
-# split.screen(c(length(data_bed_events)+length(data_bedg_win)+n, 1), screen = 1)
 split.screen(c(length(data_bed_events) + n, 1), screen = 1)
 split.screen(c(length(data_bedg_win) + n + n * 4, 1), screen = 2)
 
@@ -260,8 +261,6 @@ screen(1)
 par(mar=c(0.1,1,2,0.1))
 
 plot(1, type="n", axes=F, xlab="", ylab="")
-
-# labelplot("A ", title, letteradj=-.025)
 
 i=3+n
 j=1
@@ -285,12 +284,11 @@ for (bedg_i in seq_along(data_bedg_win)) {
     par(mar=c(0.1, 2, 0.1, 2))
     
     plotBed(data_bedg_win[[bedg_i]], chrom, chromstart, chromend, 
-            row='supplied',  
-            color=opaque(color_heatmap, transparency=unite_scale(data_bedg_win[[bedg_i]]$V4, max=max_value)))  
-   
-    axis(side=2, lwd.tick=0, labels=FALSE, col=data_bed_events[[bedg_i]]$color[1])
+            row='supplied', 
+            color= data_bedg_win[[bedg_i]]$color)
+    axis(side=2, lwd.tick=0, labels=FALSE, col=data_bed_events[[bedg_i]]$color_axis[1])
 
-    mtext(data_bed_events[[bedg_i]]$id[1], side=2, cex=size_lab, las=1, col=data_bed_events[[bedg_i]]$color[1])
+    mtext(data_bed_events[[bedg_i]]$id[1], side=2, cex=size_lab, las=1, col=data_bed_events[[bedg_i]]$color_axis[1])
 
     i=i+1
     j=j+1
@@ -329,6 +327,7 @@ plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, colour =
 
 ## Adding heatmap scale to the legend
 bedGraphRange <- c(0, max_value)
+
 plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, fill = 0)) +
     scale_fill_gradientn (guide = "colorbar",
                           colours = c(color_min, color_max),

@@ -93,12 +93,9 @@ for f in args.file_mice_behavior:
 
     data_read = int_data.read(relative_coord=True)
 
-    #####
-    ##########
     chr_file_n = "chrom"
     mapping.write_chr_sizes(data_read, file_n=chr_file_n)
     chr_file = chr_file_n + ".sizes"
-    ##########
 
     if end_time < int_data.max - int_data.min:
         end_time = int_data.max - int_data.min
@@ -118,33 +115,17 @@ bed_dict = dict()
 bed_dict['ctrl'] = {}
 bed_dict['hf'] = {}
 
-# bed_dict['ctrl'][data_type_1] = data_read_all_batches.convert(mode="bed", data_types=[data_type_1],
-#                                                               color_restrictions=data_type_col, tracks=list_ctrl)
-# bed_dict['ctrl'][data_type_2] = data_read_all_batches.convert(mode="bed", data_types=[data_type_2],
-#                                                               color_restrictions=data_type_col, tracks=list_ctrl)
-# bed_dict['hf'][data_type_1] = data_read_all_batches.convert(mode="bed", data_types=[data_type_1],
-#                                                             color_restrictions=data_type_col, tracks=list_hf)
-# bed_dict['hf'][data_type_2] = data_read_all_batches.convert(mode="bed", data_types=[data_type_2],
-#                                                             color_restrictions=data_type_col, tracks=list_hf)
-
-#### OJO CON ESTO PARA EL RESTO DE LA EJECUCION
 bed_dict['ctrl']['food'] = data_read_all_batches.convert(mode="bed", data_types=data_type_joined, data_types_actions="all",
                                                               color_restrictions=data_type_col, tracks=list_ctrl)
-# print bed_dict['ctrl']['food']
-
 bed_dict['hf']['food'] = data_read_all_batches.convert(mode="bed", data_types=data_type_joined, data_types_actions="all",
                                                             color_restrictions=data_type_col, tracks=list_hf)
-# print bed_dict['hf']['food']
-
-
-# bed_dict['ctrl'][data_type_1] = data_read_all_batches.convert(mode="bed", data_types=[data_type_1],
-#                                                               color_restrictions=data_type_col, tracks=list_ctrl)
 
 # Generating sequence of days without light and dark phases #del
-mapping.write_period_seq(end=end_time, delta=86400, tag="day", name_file="days_seq") #del
-mapping.write_cytoband(start=0, end=end_time, start_phase="dark", track_line=False, lab_bed=False) #del
-days_bed_f = "days_seq.bed" #del
-days_bed = pybedtools.BedTool(days_bed_f) #del
+mapping.write_period_seq(end=end_time, delta=86400, tag="day", name_file="days_seq")
+# mapping.write_cytoband(start=0, end=end_time, start_phase="dark", track_line=False, lab_bed=False)
+mapping.write_cytoband(start=26953, end=end_time, start_phase="light", track_line=False, lab_bed=False)
+days_bed_f = "days_seq.bed"
+days_bed = pybedtools.BedTool(days_bed_f)
 
 ## weeks
 mapping.write_period_seq(end=end_time, delta=604800, tag="week", name_file="weeks_seq", lab_bed=True, track_line=True)
@@ -186,27 +167,21 @@ for exp_group, dict_exp_gr in bed_dict.iteritems():
 
             ### bouts per week
             weeks_bed = pybedtools.BedTool(weeks_bed_f)
-            weeks_bed.intersect(bed_BedTools, c=True).moveto("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + "n_bouts.tbl") #OK
+            weeks_bed.intersect(bed_BedTools, c=True).moveto("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + "n_bouts.tbl")
 
             ### mean value
             statistic="mean"
-            weeks_bed.map(bed_BedTools, c=5, o=statistic, null=0).moveto("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + 'mean.tbl') #OK
+            weeks_bed.map(bed_BedTools, c=5, o=statistic, null=0).moveto("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + 'mean.tbl')
 
             ### eating rate
-            weeks_bed.map(bed_BedTools.each(rate_bed), c=5, o=statistic, null=0).moveto("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + 'rate.tbl') #OK
+            weeks_bed.map(bed_BedTools.each(rate_bed), c=5, o=statistic, null=0).moveto("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + 'rate.tbl')
 
             ### meal duration
-            weeks_bed.map(bed_BedTools.each(length_bed), c=5, o=statistic, null=0).moveto("tr_"+ tr[0] + '.'+ exp_group+ '.' + data_type + '.' + 'duration.tbl') #OK
+            weeks_bed.map(bed_BedTools.each(length_bed), c=5, o=statistic, null=0).moveto("tr_"+ tr[0] + '.'+ exp_group+ '.' + data_type + '.' + 'duration.tbl')
 
             ### intermeal interval
-            # bed_BedTools.moveto("tr_"+ tr[0] + '.ori')
-            # bed_BedTools = pybedtools.BedTool("tr_"+ tr[0] + '.ori')
-            # bed_BedTools.complement(g=chr_file).moveto("tr_"+ tr[0] + '.' + "intermeal")
-
-            # weeks_bed.intersect(bed_BedTools.complement(g=chr_file)).each(length_bed).moveto("tr_"+ tr[0] + '.' + "test.intermeal")
-            # bed_BedTools.complement(g=chr_file).moveto("tr_"+ tr[0] + '.' + "intermeal")
             weeks_bed.map(weeks_bed.intersect(bed_BedTools.complement(g=chr_file)).each(length_bed).sort(), c=5, o=statistic, null=0)\
-                .moveto("tr_"+ tr[0] + '.' + exp_group+ '.' + data_type + '.'  + 'intermeal_time.tbl') #OK
+                .moveto("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + 'intermeal_time.tbl')
 
             for key, bed_phase in d_exp_phases_bed.iteritems():
                 exp_phase = key[1]

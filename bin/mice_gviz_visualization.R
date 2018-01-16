@@ -149,8 +149,7 @@ names (argsL) <- argsDF$V1
 ## Read files bedGraph files
 b2v <- exp_info <- read.table(file.path(experiment_info), header = TRUE, stringsAsFactors=FALSE)
 exp_info$condition <- as.factor(exp_info$condition)
-exp_info$condition <- ordered(exp_info$condition, levels = c("Control",
-                                                             "HF"))
+exp_info$condition <- ordered(exp_info$condition, levels = c("Control", "HF"))
 b2v <- exp_info
 
 bed_dir <- file.path(path_bed_files)
@@ -230,7 +229,7 @@ col_back_title="brown"
 l_granges_bg <- bed2pergViz (bg2v, exp_info, "bedGraph") 
 
 min_heatmap <- 0
-max_heatmap <- 4
+max_heatmap <- 0.5
 color_min <- 'white'
 color_max <- 'blue'
 
@@ -293,7 +292,7 @@ plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, fill = 0
                         colours = c(color_min, color_max),
                         values = c(bedGraphRange[1], bedGraphRange[2]),
                         limits = c(bedGraphRange[1], bedGraphRange[2]),
-                        breaks   = c(bedGraphRange[1], bedGraphRange[2]),
+                        breaks = c(bedGraphRange[1], bedGraphRange[2]),
                         labels = c(bedGraphRange[1], paste(bedGraphRange[2],"    ", sep="")),
                         name = "",
                         rescaler = function(x,...) x,                                        
@@ -324,12 +323,12 @@ plot_name <- "mice_gviz_viz"
 
 {
     if (image_format == 'tiff' | image_format == 'tif') {
-        tiff(paste(plot_name, ".", image_format, sep=""), width = 45 , height = 34, units = "cm", res=300)        
+        tiff(paste(plot_name, ".", image_format, sep=""), width = 45 , height = 34, units = "cm", res=300)
         size_lab <- 0.3
     }
     else if (image_format == 'pdf') {        
         # pdf(paste(plot_name, ".", image_format, sep=""), width = 45 , height = 34)
-	pdf(paste(plot_name, ".", image_format, sep=""), width = 18.3 , height =24.7)
+	    pdf(paste(plot_name, ".", image_format, sep=""), width = 18.3 , height =24.7)
         size_lab <- 0.5
     }
     else if (image_format == 'png') {        
@@ -343,8 +342,10 @@ plot_name <- "mice_gviz_viz"
 
 p <- plotTracks(c(g_tr, unlist(l_gr_annotation_tr_bed), unlist(l_gr_data_tr_bg),  phases_tr, unlist(ctracks)),
 	       ##different windows of time selected
-           # from=0, to=1814400, # 21 days
-           from=0, to=5443200, # 9 weeks
+           # from=0, to=1814400, # 3 weeks
+           from=26953, to=1841353, # 3 weeks # Shift the first hours until 8PM, this way phases look nicer
+           # from=26953, to=604800+26953, #habituation week
+           # from=26953, to=5443200, # 9 weeks
            ##range of heatmap data
            ylim=c(0, max_heatmap), #ori
            shape = "box", stacking = "dense",
