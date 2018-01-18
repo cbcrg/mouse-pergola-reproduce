@@ -1,4 +1,3 @@
-track name="1_Basal_Nicotine_withdrawal_Nicotine_treatment" description="1 Basal_Nicotine_withdrawal_Nicotine_treatment" visibility=2 itemRgb="On" priority=20
-chr1	0	1216217	Basal	1000	+	0	1216217	0,0,128
-chr1	1226706	2422925	Nicotine_treatment	1000	+	1226706	2422925	0,0,0
-chr1	2432140	3635631	Nicotine_withdrawal	1000	+	2432140	3635631	254,194,254
+track name="1_Development_Habituation" description="1 Development_Habituation" visibility=2 itemRgb="On" priority=20
+chr1	0	590598	Habituation	1000	+	0	590598	254,194,254
+chr1	595585	1807822	Development	1000	+	595585	1807822	0,0,128

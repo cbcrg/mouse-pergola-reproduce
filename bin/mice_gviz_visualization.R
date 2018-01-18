@@ -244,7 +244,7 @@ l_gr_data_tr_bg <- lapply (seq_along(l_granges_bg), function (i_group_exp) {
     d_track <- DataTrack(granges_obj,
                          type="heatmap", ylim = c(min_heatmap, max_heatmap),
                          background.title = l_gr_color[[i_group_exp]],
-                         gradient=c(color_min, color_max), 
+                         gradient=c(color_min, color_max),
                          showAxis = F, name = id)
     return (d_track)
   })
@@ -256,8 +256,8 @@ names (l_gr_data_tr_bg) <- names(l_granges_bg)
 l_gr_annotation_tr_bed <- l_gr_annotation_tr_bed[levels(exp_info$condition)]
 l_gr_data_tr_bg <- l_gr_data_tr_bg [levels(exp_info$condition)]
 
-size_labels <- 8
-cex_gtrack <- 1.4
+size_labels <- 16
+cex_gtrack <- 1
 g_tr <- GenomeAxisTrack()
 
 ## creating a legend
@@ -269,8 +269,8 @@ colnames(df_legend) <- c("x", "y", "names")
 df_legend$names <- ordered(gsub("_", " ", df_legend$names), levels = gsub("_", " ", levels(exp_info$condition)))
 color_by_tr <- unlist(l_gr_color[levels(exp_info$condition)])
 names(color_by_tr) <- gsub("_", " ", levels(exp_info$condition))
-# size_text_leg <- 18
-size_text_leg <- 16
+size_text_leg <- 18
+# size_text_leg <- 16
 df_empty <- data.frame()
 
 plot_legends <- ggplot(df_empty) + geom_point() + 
@@ -286,7 +286,7 @@ plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, colour =
                 geom_blank()
 
 ## Adding heatmap scale to the legend
-bedGraphRange <- c(0,max_heatmap)
+bedGraphRange <- c(0, max_heatmap)
 plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, fill = 0)) +
   scale_fill_gradientn (guide = "colorbar",
                         colours = c(color_min, color_max),
@@ -327,8 +327,8 @@ plot_name <- "mice_gviz_viz"
         size_lab <- 0.3
     }
     else if (image_format == 'pdf') {        
-        # pdf(paste(plot_name, ".", image_format, sep=""), width = 45 , height = 34)
-	    pdf(paste(plot_name, ".", image_format, sep=""), width = 18.3 , height =24.7)
+      pdf(paste(plot_name, ".", image_format, sep=""), width = 45 , height = 34)
+	    # pdf(paste(plot_name, ".", image_format, sep=""), width = 18.3 , height =24.7)
         size_lab <- 0.5
     }
     else if (image_format == 'png') {        
@@ -340,14 +340,13 @@ plot_name <- "mice_gviz_viz"
     }
 }
 
-p <- plotTracks(c(g_tr, unlist(l_gr_annotation_tr_bed), unlist(l_gr_data_tr_bg),  phases_tr, unlist(ctracks)),
+p <- plotTracks(c(g_tr, unlist(l_gr_annotation_tr_bed), unlist(l_gr_data_tr_bg), phases_tr, unlist(ctracks)),
 	       ##different windows of time selected
            # from=0, to=1814400, # 3 weeks
            from=26953, to=1841353, # 3 weeks # Shift the first hours until 8PM, this way phases look nicer
            # from=26953, to=604800+26953, #habituation week
            # from=26953, to=5443200, # 9 weeks
            ##range of heatmap data
-           ylim=c(0, max_heatmap), #ori
            shape = "box", stacking = "dense",
            fontsize=size_labels, cex=cex_gtrack)
 grid.draw (leg_groups)

@@ -224,7 +224,7 @@ data.frame_bed.hf <- data.frame_bed.hf [data.frame_bed.hf$period < 10,]
 
 name_file <- paste ("heatmap_behavior_week", ".", image_format, sep="")
 plot_width <- 12
-plot_height <- 10
+plot_height <- 6
 setwd(pwd)
 heatMapPlotter (data.frame_bed.hf, main="\n",  weekNotation="N", legPos="right", xlab="\nWeeks\n", ylab="\n")
 ggsave (file=name_file, width=plot_width, height=plot_height, dpi=300)
