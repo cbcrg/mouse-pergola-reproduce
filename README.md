@@ -17,7 +17,7 @@ cd mouse-pergola-reproduce
 
 ## Data
 
-Data is publicly available in [Zenodo](https://zenodo.org/) as a compressed tarball [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1067839.svg)](https://doi.org/10.5281/zenodo.1067839).
+Data is publicly available in [Zenodo](https://zenodo.org/) as a compressed tarball [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1154828.svg)](https://doi.org/10.5281/zenodo.1154828).
 
 Data can be downloaded and uncompressed using the following command:
 
