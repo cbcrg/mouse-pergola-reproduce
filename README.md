@@ -69,13 +69,13 @@ You can also check the file [here](https://gist.githubusercontent.com/JoseEspino
 Pull the docker image containing the version of shiny-pergola web application used for render the data visualization:
 
 ```bash
-docker pull pergola/shiny-pergola@sha256:b8348c3756844e251e1328ce906e0d552149866a90df1ef212733136b4b53b07
+docker pull pergola/shiny-pergola@sha256:6a3668eeb160a04e5fa7853d318be6b0d64a707fa7d8aa98a1468cb3b27cba86
 ```
 
 With docker running, launch the image:
 
 ```bash
-docker run --rm -p 3600:80 -v "$(pwd)":/pergola_data pergola/shiny-pergola@sha256:b8348c3756844e251e1328ce906e0d552149866a90df1ef212733136b4b53b07 &
+docker run --rm -p 3600:80 -v "$(pwd)":/pergola_data pergola/shiny-pergola@sha256:6a3668eeb160a04e5fa7853d318be6b0d64a707fa7d8aa98a1468cb3b27cba86 &
 ```
 
 **Note**: `"$(pwd)"` can be substitute by your absolute path to the folder where the `mouse-pergola-reproduce.nf` has been run. 
