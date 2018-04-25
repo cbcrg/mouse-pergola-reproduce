@@ -59,8 +59,11 @@ The previous command generates a results folder that contains the results of the
 
 ## Online Shiny-Pergola visualization
 
+From the folder where you have run the pipeline, you can visualize the results using Shiny-Pergola introducing the commands described below.
+ 
 #### shiny-pergola config file
 
+To set the membership of each of the files inside the folder with the same name, a config file is needed.
 The repository includes a file assigning files to each of the groups (*Control,  HF*)
 You can also check the file [here](https://gist.githubusercontent.com/JoseEspinosa/52e7e948fbeb5c9265d567b556628d31/raw/494957605cf99f53484d6c4ed7f6456ec86cb431/hf_mice_conf.txt) 
 
@@ -69,13 +72,13 @@ You can also check the file [here](https://gist.githubusercontent.com/JoseEspino
 Pull the docker image containing the version of shiny-pergola web application used for render the data visualization:
 
 ```bash
-docker pull pergola/shiny-pergola@sha256:6a3668eeb160a04e5fa7853d318be6b0d64a707fa7d8aa98a1468cb3b27cba86
+docker pull pergola/shiny-pergola@sha256:e4c470b3916ce6ce0298b231d3a8d18bf72535beb04251c13439351c90797431
 ```
 
 With docker running, launch the image:
 
 ```bash
-docker run --rm -p 3600:80 -v "$(pwd)":/pergola_data pergola/shiny-pergola@sha256:6a3668eeb160a04e5fa7853d318be6b0d64a707fa7d8aa98a1468cb3b27cba86 &
+docker run --rm -p 3600:80 -v "$(pwd)":/pergola_data pergola/shiny-pergola@sha256:e4c470b3916ce6ce0298b231d3a8d18bf72535beb04251c13439351c90797431 &
 ```
 
 **Note**: `"$(pwd)"` can be substitute by your absolute path to the folder where the `mouse-pergola-reproduce.nf` has been run. 
@@ -85,16 +88,16 @@ just select it by setting the figure on id.txt file. For instance if you want to
 you just have to type the following command before running Docker shiny-pergola image.
 
 ```bash
-echo "hf_s4a" > id.txt
+echo "hf_1" > id.txt
 ```
 
 The codes for each figure are:
 
 | Figure        | Code   |
 | ------------- | ------ |
-| Supp. Fig. 3  | hf_s3  |
-| Supp. Fig. 4a | hf_s4a |
-| Supp. Fig. 4b | hf_s4b |
+| Supp. Fig. 4a | hf_1   |
+| Supp. Fig. 4b | hf_2   |
+| Supp. Fig. S2 | hf_3   |
 
 Go to your web browser and type in your address bar the ip address returned by the following command e.g. http://0.0.0.0:3600
 
