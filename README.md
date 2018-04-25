@@ -95,8 +95,8 @@ The codes for each figure are:
 
 | Figure        | Code   |
 | ------------- | ------ |
-| Supp. Fig. 4a | hf_1   |
-| Supp. Fig. 4b | hf_2   |
+| Fig. 4a       | hf_1   |
+| Fig. 4b       | hf_2   |
 | Supp. Fig. S2 | hf_3   |
 
 Go to your web browser and type in your address bar the following ip address: http://0.0.0.0:3600
