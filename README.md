@@ -99,7 +99,7 @@ The codes for each figure are:
 | Supp. Fig. 4b | hf_2   |
 | Supp. Fig. S2 | hf_3   |
 
-Go to your web browser and type in your address bar the ip address returned by the following command e.g. http://0.0.0.0:3600
+Go to your web browser and type in your address bar the following ip address: http://0.0.0.0:3600
 
 **Note**: In newer Docker versions by default the IP address used is the localhost ``0.0.0.0``. As this IP might be used 
 by other services in the default port (80), we especified the port used in our docker command by ``-p 3600:80``. 
