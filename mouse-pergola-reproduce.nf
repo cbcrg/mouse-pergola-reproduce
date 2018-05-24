@@ -55,7 +55,7 @@ nextflow run mouse-pergola-reproduce.nf \
   --mappings_bed='small_data/mappings/bed2pergola.txt' \
   --phases='small_data/phases/exp_phases.csv' \
   --mappings_phase='small_data/mappings/f2g.txt' \
-  --exp_info='small_data/mappings/exp_info_small.txt' \
+  --exp_info='small_data/mappings/exp_info.txt' \
   --image_format='tiff' \
   -with-docker
 */
@@ -117,7 +117,9 @@ process behavior_by_week {
   	stdout into max_time
     file 'exp_phases' into exp_phases_bed_to_wr, exp_phases_bed_to_wr2
     file 'exp_phases_sushi' into exp_phases_bed_sushi, exp_phases_bed_gviz
-	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz, days_bed_igv, days_bed_shiny
+	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz, days_bed_igv, days_bed_shiny, days_bed_deepTools
+    file 'Development_dark.bed' into bed_dark_development
+    file 'Habituation_dark.bed' into bed_dark_habituation
 
   	"""
   	mice_stats_by_week.py -f "${file_preferences}"/intake*.csv -m ${mapping_file} -s "sum" -b feeding -p ${exp_phases} -mp ${mapping_file_phase}
@@ -126,6 +128,8 @@ process behavior_by_week {
   	cp exp_phases.bed exp_phases
   	tail +2 exp_phases > exp_phases_sushi
   	mv *.bed  stats_by_phase/
+  	mv stats_by_phase/Development_dark.bed ./
+  	mv stats_by_phase/Habituation_dark.bed ./
   	mv *.tbl  behaviors_by_week/
   	"""
 }
@@ -274,7 +278,8 @@ process convert_bedGraph {
   	val max from max_time.first()
 
   	output:
-  	file 'tr*food*.bedGraph' into bedGraph_out, bedGraph_out_shiny_p, bedGraph_out_gviz, bedGraph_out_sushi
+  	file 'tr*food*.bedGraph' into bedGraph_out, bedGraph_out_shiny_p, bedGraph_out_gviz, bedGraph_out_sushi, bedGraph_out_bigwig
+  	file 'chrom.sizes' into chrom_sizes
   	//file 'tr*{water,sac}*.bedGraph' into bedGraph_out_drink
 
   	"""
@@ -347,3 +352,162 @@ process sushi_visualization {
         --image_format=${image_format}
   	"""
 }
+
+//bedGraph_out_bigwig.flatten().println()
+
+bedGraph_out_bigwig_short_name = bedGraph_out_bigwig.flatten().map {
+    def content = it
+    def name = it.baseName.replaceAll('tr_','').replaceAll('_dt_food_fat_food_sc','').replaceAll('_dt_food_sc','')
+    [ content, name ]
+}
+
+
+/*
+ * For each pair get the correlation using bigwig
+ */
+process bedgraph_to_bigWig {
+    container = '089a918d085e'
+    publishDir "results_new/", mode: 'copy', overwrite: 'true'
+
+  	input:
+  	set file (bedgr_file), val (name) from bedGraph_out_bigwig_short_name
+    file chrom_sizes from chrom_sizes.first()
+
+    output:
+    file '*.bw' into bigWig_matrix, bigWig_multiBigwigSummary
+
+    """
+  	head -n -2 ${bedgr_file} > ${name}.trimmed
+    bedGraphToBigWig ${name}.trimmed ${chrom_sizes} ${name}".bw"
+
+
+  	"""
+}
+//bigWig_out.toSortedList{ it.name.replace(".bw", "").toInteger() }.println()
+
+process deep_tools_matrix {
+    container = '089a918d085e'
+    publishDir "results_new/", mode: 'copy', overwrite: 'true'
+
+    input:
+    //file day_phases_dir from days_bed_deepTools
+    file dark_habituation from bed_dark_habituation
+    file dark_development from bed_dark_development
+    file bigwig_file from bigWig_matrix.toSortedList{ it.name.replace(".bw", "").toInteger() }
+
+    output:
+
+
+    file 'matrix.mat.gz' into matrix_heatmap, matrix_profile
+
+    """
+    computeMatrix scale-regions -S ${bigwig_file} \
+                                -R  ${dark_habituation} ${dark_development} \
+                              --beforeRegionStartLength 21600 \
+                              --regionBodyLength  43200 \
+                              --afterRegionStartLength 21600 \
+                              --skipZeros -out matrix.mat.gz
+
+
+
+    """
+}
+
+/*
+nice plot
+computeMatrix scale-regions -S ${bigwig_file} \
+                                -R phases_dark.bed \
+                              --beforeRegionStartLength 3000 \
+                              --regionBodyLength 5000 \
+                              --afterRegionStartLength 3000 \
+                              --skipZeros -out matrix.mat.gz
+whole plot
+                              --beforeRegionStartLength 21600 \
+                              --regionBodyLength  43200 \
+                              --afterRegionStartLength 21600 \
+*/
+
+//file '*.png' into heatmap_deepTools
+
+process deep_tools_heatmap {
+    container = '089a918d085e'
+    publishDir "results_new/", mode: 'copy', overwrite: 'true'
+
+    input:
+    file matrix from matrix_heatmap
+
+    output:
+    file '*.png' into heatmap_fig
+
+    """
+    plotHeatmap -m ${matrix} \
+                -out heatmap_actogram_like.png \
+                --kmeans 2
+
+
+    """
+}
+
+process deep_tools_profile {
+    container = '089a918d085e'
+    publishDir "results_new/", mode: 'copy', overwrite: 'true'
+
+    input:
+    file matrix from matrix_profile
+
+    output:
+    file '*.png' into profile_fig
+
+    """
+    plotProfile -m ${matrix} \
+                -out profile.png \
+                --plotTitle "Test data profile"
+
+
+    """
+}
+
+process deep_tools_bigWigSummary {
+    container = '089a918d085e'
+    publishDir "results_new/", mode: 'copy', overwrite: 'true'
+
+    input:
+
+    file bigwig_file from bigWig_multiBigwigSummary.toSortedList{ it.name.replace(".bw", "").toInteger() }
+
+    output:
+
+
+    file 'results.npz' into multiBigwigSummary
+    file 'PCA.png' into pca_fig
+
+    """
+    multiBigwigSummary bins -b $bigwig_file -o results.npz
+
+    plotPCA -in results.npz \
+            -o PCA.png \
+            -T "PCA"
+    """
+}
+
+/*
+process deep_tools_pca {
+    container = '089a918d085e'
+    publishDir "results_new/", mode: 'copy', overwrite: 'true'
+
+    input:
+
+    file bigwig_file from bigWig_multiBigwigSummary.toSortedList{ it.name.replace(".bw", "").toInteger() }
+
+    output:
+
+
+    file 'results.npz' into multiBigwigSummary
+
+    """
+    multiBigwigSummary -b $bigwig_file -o results.npz
+
+
+    """
+}
+*/

@@ -192,6 +192,9 @@ for exp_group, dict_exp_gr in bed_dict.iteritems():
                 # bouts per experimental phase
                 exp_phase_events_bed = bed_BedTools.intersect(pybedtools.BedTool(exp_phase + ".bed"))
 
+                # dark phases per experimental phase
+                pybedtools.BedTool(exp_phase + ".bed").intersect(pybedtools.BedTool("phases_dark.bed")).saveas(exp_phase + "_dark.bed")
+
                 ###################
                 # Generate mean value of the whole record after intersecting with phase
                 if exp_phase_events_bed.count() == 0:
@@ -203,3 +206,6 @@ for exp_group, dict_exp_gr in bed_dict.iteritems():
                     days_bed.map(exp_phase_events_bed, c=5, o=statistic, null=0).intersect(
                         pybedtools.BedTool(exp_phase + ".bed")).saveas(
                         'tr_' + exp_group + '.' + '.'.join(tr) + ".day." + exp_phase + ".bed")
+
+
+# data_read_exp_phases
