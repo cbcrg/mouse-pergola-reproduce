@@ -30,6 +30,7 @@ params.recordings     = "$baseDir/small_data/mouse_recordings/"
 params.mappings       = "$baseDir/small_data/mappings/b2p.txt"
 params.mappings_bed   = "$baseDir/small_data/mappings/bed2pergola.txt"
 params.phases         = "$baseDir/small_data/phases/exp_phases.csv"
+params.phases_long    = "$baseDir/small_data/phases/exp_phases_whole_exp.csv"
 params.mappings_phase = "$baseDir/small_data/mappings/f2g.txt"
 params.exp_info       = "$baseDir/small_data/mappings/exp_info.txt"
 params.output         = "files/"
@@ -37,14 +38,15 @@ params.image_format   = "tiff"
 
 log.info "Mouse - Pergola - Reproduce  -  version 0.2.0"
 log.info "====================================="
-log.info "mice recordings        : ${params.recordings}"
-log.info "mappings               : ${params.mappings}"
-log.info "mappings bed           : ${params.mappings_bed}"
-log.info "experimental phases    : ${params.phases}"
-log.info "mappings phases        : ${params.mappings_phase}"
-log.info "experimental info      : ${params.exp_info}"
-log.info "output                 : ${params.output}"
-log.info "image format           : ${params.image_format}"
+log.info "mice recordings          : ${params.recordings}"
+log.info "mappings                 : ${params.mappings}"
+log.info "mappings bed             : ${params.mappings_bed}"
+log.info "experimental phases      : ${params.phases}"
+log.info "experimental phases long : ${params.phases_long}"
+log.info "mappings phases          : ${params.mappings_phase}"
+log.info "experimental info        : ${params.exp_info}"
+log.info "output                   : ${params.output}"
+log.info "image format             : ${params.image_format}"
 log.info "\n"
 
 // Example command to run the script
@@ -54,6 +56,7 @@ nextflow run mouse-pergola-reproduce.nf \
   --mappings='small_data/mappings/b2p.txt' \
   --mappings_bed='small_data/mappings/bed2pergola.txt' \
   --phases='small_data/phases/exp_phases.csv' \
+  --phases_long='small_data/phases/exp_phases_whole_exp.csv' \
   --mappings_phase='small_data/mappings/f2g.txt' \
   --exp_info='small_data/mappings/exp_info.txt' \
   --image_format='tiff' \
@@ -69,6 +72,7 @@ mapping_file_bG = file(params.mappings)
 mapping_file_phase = file(params.mappings_phase)
 
 exp_phases = file(params.phases)
+exp_phases_long = file(params.phases_long)
 exp_info = file(params.exp_info)
 
 /*
@@ -77,6 +81,7 @@ exp_info = file(params.exp_info)
 if( !mapping_file.exists() ) exit 1, "Missing mapping file: ${mapping_file}"
 if( !mapping_file_phase.exists() ) exit 1, "Missing mapping phases file: ${mapping_file_phase}"
 if( !exp_phases.exists() ) exit 1, "Missing phases file: ${exp_phases}"
+if( !exp_phases_long.exists() ) exit 1, "Missing long phases file: ${exp_phases_long}"
 if( !exp_info.exists() ) exit 1, "Missing experimental info file: ${exp_info}"
 
 /*
@@ -111,25 +116,29 @@ process behavior_by_week {
   	file mapping_file
     file mapping_file_phase
     file exp_phases
+    file exp_phases_long
 
   	output:
   	file 'behaviors_by_week' into d_behaviors_by_week
   	stdout into max_time
     file 'exp_phases' into exp_phases_bed_to_wr, exp_phases_bed_to_wr2
     file 'exp_phases_sushi' into exp_phases_bed_sushi, exp_phases_bed_gviz
+
 	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz, days_bed_igv, days_bed_shiny, days_bed_deepTools
-    file 'Development_dark.bed' into bed_dark_development
-    file 'Habituation_dark.bed' into bed_dark_habituation
+    file 'Habituation_dark_long.bed' into bed_dark_habituation
+    file 'Development_dark_long.bed' into bed_dark_development
 
   	"""
-  	mice_stats_by_week.py -f "${file_preferences}"/intake*.csv -m ${mapping_file} -s "sum" -b feeding -p ${exp_phases} -mp ${mapping_file_phase}
+  	mice_stats_by_week.py -f "${file_preferences}"/intake*.csv -m ${mapping_file} -s "sum" -b feeding -p ${exp_phases} \
+  	                      -pl ${exp_phases_long} -mp ${mapping_file_phase}
+
   	mkdir stats_by_phase
   	mkdir behaviors_by_week
   	cp exp_phases.bed exp_phases
   	tail +2 exp_phases > exp_phases_sushi
   	mv *.bed  stats_by_phase/
-  	mv stats_by_phase/Development_dark.bed ./
-  	mv stats_by_phase/Habituation_dark.bed ./
+  	mv stats_by_phase/Development_dark_long.bed ./
+  	mv stats_by_phase/Habituation_dark_long.bed ./
   	mv *.tbl  behaviors_by_week/
   	"""
 }
@@ -403,10 +412,10 @@ process deep_tools_matrix {
     """
     computeMatrix scale-regions -S ${bigwig_file} \
                                 -R  ${dark_habituation} ${dark_development} \
-                              --beforeRegionStartLength 21600 \
-                              --regionBodyLength  43200 \
-                              --afterRegionStartLength 21600 \
-                              --skipZeros -out matrix.mat.gz
+                                --beforeRegionStartLength 21600 \
+                                --regionBodyLength  43200 \
+                                --afterRegionStartLength 21600 \
+                                --skipZeros -out matrix.mat.gz
 
 
 
@@ -417,6 +426,7 @@ process deep_tools_matrix {
 nice plot
 computeMatrix scale-regions -S ${bigwig_file} \
                                 -R phases_dark.bed \
+                                -R  ${dark_habituation} ${dark_development} \
                               --beforeRegionStartLength 3000 \
                               --regionBodyLength 5000 \
                               --afterRegionStartLength 3000 \
@@ -437,12 +447,19 @@ process deep_tools_heatmap {
     file matrix from matrix_heatmap
 
     output:
-    file '*.png' into heatmap_fig
+    file "*.${image_format}" into heatmap_fig
 
     """
     plotHeatmap -m ${matrix} \
-                -out heatmap_actogram_like.png \
-                --kmeans 2
+                -out heatmap_actogram_like".${image_format}" \
+                -z Habituation Development \
+                -T "Feeding behavior over 24 hours" \
+                --startLabel APS \
+                --endLabel RPS \
+                --xAxisLabel "Time (s)" \
+                --plotFileFormat ${image_format} #\
+                #--sortRegions no
+                # --kmeans 2
 
 
     """
@@ -456,11 +473,12 @@ process deep_tools_profile {
     file matrix from matrix_profile
 
     output:
-    file '*.png' into profile_fig
+    file "*.${image_format}" into profile_fig
 
     """
     plotProfile -m ${matrix} \
-                -out profile.png \
+                -out profile".${image_format}" \
+                --plotFileFormat ${image_format} \
                 --plotTitle "Test data profile"
 
 
@@ -479,14 +497,19 @@ process deep_tools_bigWigSummary {
 
 
     file 'results.npz' into multiBigwigSummary
-    file 'PCA.png' into pca_fig
+    file "PCA.${image_format}" into pca_fig
 
     """
-    multiBigwigSummary bins -b $bigwig_file -o results.npz
+    multiBigwigSummary bins -b $bigwig_file \
+                            -o results.npz #\
+                            #-bs 1800 #\
+                            #--smartLabels # label is file without extension
 
     plotPCA -in results.npz \
-            -o PCA.png \
-            -T "PCA"
+            -o PCA".${image_format}" \
+            -T "PCA" \
+            --plotFileFormat ${image_format} #\
+            #--colors #999999 #e69f00 #999999 #e69f00 #999999 #999999 #e69f00 #999999 #e69f00 #999999 #e69f00 #999999 #e69f00 #999999 #e69f00 #999999 #e69f00
     """
 }
 
@@ -511,3 +534,4 @@ process deep_tools_pca {
     """
 }
 */
+
