@@ -47,6 +47,7 @@ log.info "mappings phases          : ${params.mappings_phase}"
 log.info "experimental info        : ${params.exp_info}"
 log.info "output                   : ${params.output}"
 log.info "image format             : ${params.image_format}"
+log.info "chromHMM config table    : ${params.tbl_chromHMM}"
 log.info "\n"
 
 // Example command to run the script
@@ -59,7 +60,8 @@ nextflow run mouse-pergola-reproduce.nf \
   --phases_long='small_data/phases/exp_phases_whole_exp.csv' \
   --mappings_phase='small_data/mappings/f2g.txt' \
   --exp_info='small_data/mappings/exp_info.txt' \
-  --image_format='tiff' \
+  --image_format='png' \
+  --tbl_chromHMM="small_data/chromHMM_files/cellmarkfiletable" \
   -with-docker
 */
 
@@ -75,6 +77,8 @@ exp_phases = file(params.phases)
 exp_phases_long = file(params.phases_long)
 exp_info = file(params.exp_info)
 
+cell_mark_file_tbl = file(params.tbl_chromHMM)
+
 /*
  * Input files validation
  */
@@ -83,6 +87,7 @@ if( !mapping_file_phase.exists() ) exit 1, "Missing mapping phases file: ${mappi
 if( !exp_phases.exists() ) exit 1, "Missing phases file: ${exp_phases}"
 if( !exp_phases_long.exists() ) exit 1, "Missing long phases file: ${exp_phases_long}"
 if( !exp_info.exists() ) exit 1, "Missing experimental info file: ${exp_info}"
+if( !cell_mark_file_tbl.exists() ) exit 1, "Missing configuration file for chromHMM: ${cell_mark_file_tbl}"
 
 /*
  * Read image format
@@ -192,6 +197,7 @@ process convert_bed {
 
   	output:
   	file 'tr*food*.bed' into bed_out, bed_out_shiny_p, bed_out_gviz, bed_out_sushi
+  	file 'dir_bed' into dir_bed_to_chromHMM
   	// file 'tr*{water,sac}*.bed' into bed_out_drink
   	file 'phases_light.bed' into phases_night
   	file '*.fa' into out_fasta
@@ -243,6 +249,9 @@ process convert_bed {
   	        mv work_dir/*.fa ./
         fi
   	done
+
+  	mkdir dir_bed
+  	cp tr*.bed ./dir_bed
   	"""
 }
 
@@ -288,11 +297,13 @@ process convert_bedGraph {
 
   	output:
   	file 'tr*food*.bedGraph' into bedGraph_out, bedGraph_out_shiny_p, bedGraph_out_gviz, bedGraph_out_sushi, bedGraph_out_bigwig
-  	file 'chrom.sizes' into chrom_sizes
+  	file 'chrom.sizes' into chrom_sizes, chrom_sizes_chromHMM_b, chrom_sizes_chromHMM_l
   	//file 'tr*{water,sac}*.bedGraph' into bedGraph_out_drink
+    stdout into len_experiment_days
 
   	"""
   	pergola_rules.py -i ${batch_bg} -m ${mapping_file_bG} -max ${max} -f bedGraph -w 1800 -nt -e -dl food_sc food_fat -d all
+  	awk '{printf "%i", \$2/3600/24}' chrom.sizes
   	"""
 }
 
@@ -412,9 +423,9 @@ process deep_tools_matrix {
     """
     computeMatrix scale-regions -S ${bigwig_file} \
                                 -R  ${dark_habituation} ${dark_development} \
-                                --beforeRegionStartLength 21600 \
-                                --regionBodyLength  43200 \
-                                --afterRegionStartLength 21600 \
+                                --beforeRegionStartLength 3000 \
+                                --regionBodyLength  5000 \
+                                --afterRegionStartLength 3000 \
                                 --skipZeros -out matrix.mat.gz
 
 
@@ -535,3 +546,176 @@ process deep_tools_pca {
 }
 */
 
+//len_experiment_days.println()
+step = 3600 * 24
+window = 604800
+
+start_end_win = Channel
+                    .from( 0..63 )
+                    .map { [ 1 + (it * step),  + window + (it * step) ] }
+
+/*
+// para ordenar actograms
+Channel
+    .from( 1, 2, 3, 4, 5 )
+    .filter { it % 2 == 1 }
+*/
+
+process bin {
+    publishDir "results/", mode: 'copy', overwrite: 'true'
+
+    input:
+    file chrom_sizes from chrom_sizes_chromHMM_b.first()
+    file dir_bed_feeding from dir_bed_to_chromHMM.first()
+    //file 'cellmarkfiletable' from cell_mark_file_tbl
+    // each i from 0..len_experiment_days.toInteger()
+    // each i from 0..63
+    set val (start), val (end) from start_end_win
+
+    output:
+    file 'output_bed_binned' into output_dir_binarized
+
+    """
+    rm -f [0-9]*.bed
+
+    for file_bed in ${dir_bed_feeding}/*.bed
+    do
+        # bin_length_by_sliding_win.py -b \${file_bed} -ct 1 604800 -bins 30 120
+        bin_length_by_sliding_win.py -b \${file_bed} -ct ${start} ${end} -bins 30 120
+    done
+
+    mkdir output_bed_binned
+    mv *.bed output_bed_binned
+    """
+}
+
+
+
+/*
+# bin_length_by_sliding_win.py -b \${file_bed} -ct ${start} ${end} -bins 30 120
+
+    # pipe bedtools intersect with the respective window
+
+    #for day in {1..last_day}
+
+    # for day in length
+        # crear un pequenyo script the python que lo haga, tiene que tener como input:
+            # start and end of bed representing a week
+            # bed file para intersectar
+            # los bins que voy a usar [0,30], [30,120], [120]
+        # generate bed of day
+            echo -e "1\t \t\n"
+        # primero intersectar o primero hacer el awk, comparar running time
+        # primero intersecto luego el awk actua sobre un archivo mas corto y sera mas rapido
+        #for file_bed in *.bed
+        #do
+        #    bedtools intersect -a \${file_bed}  -b bed_day_\${n} > bed_intersect
+
+        #done
+
+
+
+
+    for file_bed in *.bed
+    do
+    # esta parte quiza sea mas facil hacerla aqui
+	    cat \${file_bed} | awk -F'\t' '\$3-\$2<=30 {print \$0}' > "30_\${file_bed}"
+	    cat \${file_bed} | awk -F'\t' '\$3-\$2>30 && \$3-\$2<=120{print \$0}' > "30_120\${file_bed}"
+	    cat \${file_bed} | awk -F'\t' '\$3-\$2>120 {print \$0}' > "120_\${file_bed}"
+    done
+
+    cd ..
+
+    awk '{print \$1"\t""30_"\$2"\t""30_"\$3}' cellmarkfiletable > "${cellmarkfiletable}.binned"
+    awk '{print \$1"\t""30_120"\$2"\t""30_120"\$3}' cellmarkfiletable >> "${cellmarkfiletable}.binned"
+    awk '{print \$1"\t""120_"\$2"\t""120_"\$3}' cellmarkfiletable >> "${cellmarkfiletable}.binned"
+
+    mkdir output_dir
+
+    java -mx4000M -jar /ChromHMM/ChromHMM.jar BinarizeBed -b 300 -peaks ${chrom_sizes} ${dir_bed_feeding} "${cellmarkfiletable}.binned" output_dir
+    """
+}
+
+
+/*
+ * chromHMM binarizes feeding bed files
+ */
+/*
+process bin_binarize {
+    publishDir "results/", mode: 'copy', overwrite: 'true'
+
+    input:
+    file chrom_sizes from chrom_sizes_chromHMM_b
+    file dir_bed_feeding from dir_bed_to_chromHMM
+    file 'cellmarkfiletable' from cell_mark_file_tbl
+
+    output:
+    file 'output_dir' into output_dir_binarized
+
+    """
+    cd ${dir_bed_feeding}
+
+    rm -f [0-9]*.bed
+
+    for file_bed in *.bed
+    do
+	    cat \${file_bed} | awk -F'\t' '\$3-\$2<=30 {print \$0}' > "30_\${file_bed}"
+	    cat \${file_bed} | awk -F'\t' '\$3-\$2>30 && \$3-\$2<=120{print \$0}' > "30_120\${file_bed}"
+	    cat \${file_bed} | awk -F'\t' '\$3-\$2>120 {print \$0}' > "120_\${file_bed}"
+    done
+
+    cd ..
+
+    awk '{print \$1"\t""30_"\$2"\t""30_"\$3}' cellmarkfiletable > "${cellmarkfiletable}.binned"
+    awk '{print \$1"\t""30_120"\$2"\t""30_120"\$3}' cellmarkfiletable >> "${cellmarkfiletable}.binned"
+    awk '{print \$1"\t""120_"\$2"\t""120_"\$3}' cellmarkfiletable >> "${cellmarkfiletable}.binned"
+
+    mkdir output_dir
+
+    java -mx4000M -jar /ChromHMM/ChromHMM.jar BinarizeBed -b 300 -peaks ${chrom_sizes} ${dir_bed_feeding} "${cellmarkfiletable}.binned" output_dir
+    """
+}
+*/
+/*
+ * chromHMM binarizes feeding bed files
+ */
+/*
+process binarize {
+    publishDir "results/", mode: 'copy', overwrite: 'true'
+
+    input:
+    file chrom_sizes from chrom_sizes_chromHMM_b
+    file dir_bed_feeding from dir_bed_to_chromHMM
+    file cellmarkfiletable from cell_mark_file_tbl
+
+    output:
+    file 'output_dir' into output_dir_binarized
+
+
+    """
+    mkdir output_dir
+    java -mx4000M -jar /ChromHMM/ChromHMM.jar BinarizeBed -b 300 -peaks ${chrom_sizes} ${dir_bed_feeding} ${cellmarkfiletable} output_dir
+    """
+}
+
+n_states = 3
+process HMM_model_learn {
+
+    publishDir "${params.output_res}/chromHMM", mode: 'copy', overwrite: 'true'
+
+    input:
+    file chrom_sizes from chrom_sizes_chromHMM_l
+    file 'input_binarized' from output_dir_binarized
+
+    output:
+    file 'output_learn/*dense*.bed' into HMM_model_ANNOTATED_STATES
+    file 'output_learn/*.*' into HMM_full_results
+
+    """
+    mkdir output_learn
+    # java -mx4000M -jar /ChromHMM/ChromHMM.jar LearnModel -b 300 -l  ${chrom_sizes}  -printstatebyline test_feeding/output/outputdir test_feeding/output/outputdir_learn ${n_states} test_feeding/input/chrom.sizes
+    java -mx4000M -jar /ChromHMM/ChromHMM.jar LearnModel -b 300 -l  ${chrom_sizes} input_binarized output_learn ${n_states} ${chrom_sizes}
+    """
+}
+
+*/
