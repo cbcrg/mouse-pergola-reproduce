@@ -297,7 +297,7 @@ process convert_bedGraph {
 
   	output:
   	file 'tr*food*.bedGraph' into bedGraph_out, bedGraph_out_shiny_p, bedGraph_out_gviz, bedGraph_out_sushi, bedGraph_out_bigwig
-  	file 'chrom.sizes' into chrom_sizes, chrom_sizes_chromHMM_b, chrom_sizes_chromHMM_l
+  	file 'chrom.sizes' into chrom_sizes, chrom_sizes_chromHMM_bin, chrom_sizes_chromHMM_binarize, chrom_sizes_chromHMM_l
   	//file 'tr*{water,sac}*.bedGraph' into bedGraph_out_drink
     stdout into len_experiment_days
 
@@ -399,11 +399,8 @@ process bedgraph_to_bigWig {
     """
   	head -n -2 ${bedgr_file} > ${name}.trimmed
     bedGraphToBigWig ${name}.trimmed ${chrom_sizes} ${name}".bw"
-
-
   	"""
 }
-//bigWig_out.toSortedList{ it.name.replace(".bw", "").toInteger() }.println()
 
 process deep_tools_matrix {
     container = '089a918d085e'
@@ -416,8 +413,6 @@ process deep_tools_matrix {
     file bigwig_file from bigWig_matrix.toSortedList{ it.name.replace(".bw", "").toInteger() }
 
     output:
-
-
     file 'matrix.mat.gz' into matrix_heatmap, matrix_profile
 
     """
@@ -496,22 +491,20 @@ process deep_tools_profile {
     """
 }
 
+/*
 process deep_tools_bigWigSummary {
     container = '089a918d085e'
     publishDir "results_new/", mode: 'copy', overwrite: 'true'
 
     input:
-
     file bigwig_file from bigWig_multiBigwigSummary.toSortedList{ it.name.replace(".bw", "").toInteger() }
 
     output:
-
-
     file 'results.npz' into multiBigwigSummary
     file "PCA.${image_format}" into pca_fig
 
     """
-    multiBigwigSummary bins -b $bigwig_file \
+    multiBigwigSummary bins -b ${bigwig_file} \
                             -o results.npz #\
                             #-bs 1800 #\
                             #--smartLabels # label is file without extension
@@ -523,6 +516,7 @@ process deep_tools_bigWigSummary {
             #--colors #999999 #e69f00 #999999 #e69f00 #999999 #999999 #e69f00 #999999 #e69f00 #999999 #e69f00 #999999 #e69f00 #999999 #e69f00 #999999 #e69f00
     """
 }
+*/
 
 /*
 process deep_tools_pca {
@@ -530,12 +524,9 @@ process deep_tools_pca {
     publishDir "results_new/", mode: 'copy', overwrite: 'true'
 
     input:
-
     file bigwig_file from bigWig_multiBigwigSummary.toSortedList{ it.name.replace(".bw", "").toInteger() }
 
     output:
-
-
     file 'results.npz' into multiBigwigSummary
 
     """
@@ -546,34 +537,41 @@ process deep_tools_pca {
 }
 */
 
-//len_experiment_days.println()
 step = 3600 * 24
 window = 604800
+len_days = len_experiment_days.getVal().toInteger()
 
 start_end_win = Channel
-                    .from( 0..63 )
-                    .map { [ 1 + (it * step),  + window + (it * step) ] }
+                    .from( 0..len_days )
+                    .map { [ it, 1 + (it * step),  + window + (it * step) ] }
 
-/*
 // para ordenar actograms
+/*
 Channel
     .from( 1, 2, 3, 4, 5 )
     .filter { it % 2 == 1 }
 */
 
+
+bins = Channel
+           .from( 30, 120 )
+//           .toList()
+//           .map { it.join(" ")}
+bins="30 120"
+bins_tbl = bins
+
 process bin {
+
     publishDir "results/", mode: 'copy', overwrite: 'true'
 
     input:
-    file chrom_sizes from chrom_sizes_chromHMM_b.first()
+    file chrom_sizes from chrom_sizes_chromHMM_bin.first()
     file dir_bed_feeding from dir_bed_to_chromHMM.first()
-    //file 'cellmarkfiletable' from cell_mark_file_tbl
-    // each i from 0..len_experiment_days.toInteger()
-    // each i from 0..63
-    set val (start), val (end) from start_end_win
+    set val (index), val (start), val (end) from start_end_win
+    val bins
 
     output:
-    file 'output_bed_binned' into output_dir_binarized
+    set index, 'output_bed_binned' into output_dir_binned
 
     """
     rm -f [0-9]*.bed
@@ -581,7 +579,7 @@ process bin {
     for file_bed in ${dir_bed_feeding}/*.bed
     do
         # bin_length_by_sliding_win.py -b \${file_bed} -ct 1 604800 -bins 30 120
-        bin_length_by_sliding_win.py -b \${file_bed} -ct ${start} ${end} -bins 30 120
+        bin_length_by_sliding_win.py -b \${file_bed} -ct ${start} ${end} -bins ${bins}
     done
 
     mkdir output_bed_binned
@@ -589,8 +587,128 @@ process bin {
     """
 }
 
+process create_chromHMM_table {
+
+    publishDir "results/", mode: 'copy', overwrite: 'true'
+
+    input:
+    file 'cellmarkfiletable' from cell_mark_file_tbl
+    val bins_tbl
+
+    output:
+    file '*.binned' into cell_mark_file_tbl_binned
+
+    """
+
+    bins_ary=(${bins})
+    length_ary=\${#bins_ary[@]}
+    i_last=\$((length_ary-1))
+    i_for=\$((length_ary-2))
+
+    awk -v bin_0=\${bins_ary[0]} \
+        '{print \$1"\t0_"bin_0"_"\$2"\t0_"bin_0"_"\$3}' cellmarkfiletable > "${cellmarkfiletable}.binned"
+
+    for index in \$(seq 0 \$i_for); do
+        next_i=\$((index+1))
+        awk -v bin_1=\${bins_ary[index]} -v bin_2=\${bins_ary[next_i]} \
+            '{print \$1"\t"bin_1"_"bin_2"_"\$2"\t"bin_1"_"bin_2"_"\$3}' cellmarkfiletable >> "${cellmarkfiletable}.binned"
+    done
+
+    awk -v  bin_l=\${bins_ary[i_last]} \
+        '{print \$1"\t"bin_l"_"\$2"\t"bin_l"_"\$3}' cellmarkfiletable >> "${cellmarkfiletable}.binned"
+    """
+}
+
+/*
+ * chromHMM binarizes feeding bed files
+ */
+process binarize {
+    publishDir "results/", mode: 'copy', overwrite: 'true'
+    memory 1.GB
+
+    input:
+    file chrom_sizes from chrom_sizes_chromHMM_binarize.first()
+    set val (index), file (dir_bed_feeding) from output_dir_binned
+    file 'cellmarkfiletable' from cell_mark_file_tbl_binned
+
+    output:
+    set index, 'output_dir' into output_dir_binarized
+
+    """
+    mkdir output_dir
+    java -mx1000M -jar /ChromHMM/ChromHMM.jar BinarizeBed -b 300 -peaks ${chrom_sizes} ${dir_bed_feeding} ${cellmarkfiletable} output_dir
+    """
+}
+
+n_states = 3
+
+process HMM_model_learn {
+
+    publishDir "${params.output_res}/chromHMM", mode: 'copy', overwrite: 'true'
+
+    input:
+    file chrom_sizes from chrom_sizes_chromHMM_l.first()
+    set val (index), file ('input_binarized') from output_dir_binarized
+
+    output:
+    file 'output_learn/*dense*.bed' into HMM_model_ANNOTATED_STATES
+    set index, 'output_learn/*.*' into HMM_full_results
+    file 'model.tbl' into model
+
+    """
+    mkdir output_learn
+    # java -mx4000M -jar /ChromHMM/ChromHMM.jar LearnModel -b 300 -l  ${chrom_sizes}  -printstatebyline test_feeding/output/outputdir test_feeding/output/outputdir_learn ${n_states} test_feeding/input/chrom.sizes
+    java -mx4000M -jar /ChromHMM/ChromHMM.jar LearnModel -b 300 -l  ${chrom_sizes} input_binarized output_learn ${n_states} ${chrom_sizes}
+
+    # cat "emissions_"${n_states}".txt" | head -1 | awk -v index_v=${index} '{index_v"\t"\$0}' > emissions.tbl
+
+    tail +2 output_learn"/model_"${n_states}".txt" | awk -v index_v=${index} '{print index_v"\t"\$0}' >> model.tbl
+    """
+}
+
+process subset_tbl_by_trans_emission {
+    publishDir "${params.output_res}/chromHMM", mode: 'copy', overwrite: 'true'
+
+    input:
+    file 'model.tbl' from model.collectFile()
+
+    output:
+    file 'emission_prob.tbl' into emissions
+    file 'transition_prob.tbl' into transitions
+    file 'prob_init.tbl' into probs_init
+
+    """
+    tail +2  model.tbl | grep "emissionprobs" >> emission_prob.tbl
+    tail +2 model.tbl | grep "probinit" >> prob_init.tbl
+    tail +2  model.tbl | grep "transitionprobs" >> transition_prob.tbl
+    """
+
+}
+
+emissions.println()
+transitions.println()
+
+/*
+
+process plot_transistions {
+    publishDir "${params.output_res}/chromHMM", mode: 'copy', overwrite: 'true'
+
+    input:
+    file transitions_tbl from transitions
+
+    """
+    plot_model_evolution.R --path2tbl=${transitions_tbl} --image_format=${image_format}
+    """
+
+}
+*/
 
 
+/*
+# awk '{print \$1"\t""30_"\$2"\t""30_"\$3}' cellmarkfiletable > "${cellmarkfiletable}.binned"
+# awk '{print \$1"\t""30_120"\$2"\t""30_120"\$3}' cellmarkfiletable >> "${cellmarkfiletable}.binned"
+    # awk '{print \$1"\t""120_"\$2"\t""120_"\$3}' cellmarkfiletable >> "${cellmarkfiletable}.binned"
+*/
 /*
 # bin_length_by_sliding_win.py -b \${file_bed} -ct ${start} ${end} -bins 30 120
 
@@ -682,6 +800,7 @@ process bin_binarize {
 /*
 process binarize {
     publishDir "results/", mode: 'copy', overwrite: 'true'
+    memory 4.GB
 
     input:
     file chrom_sizes from chrom_sizes_chromHMM_b
@@ -690,7 +809,6 @@ process binarize {
 
     output:
     file 'output_dir' into output_dir_binarized
-
 
     """
     mkdir output_dir
@@ -717,5 +835,6 @@ process HMM_model_learn {
     java -mx4000M -jar /ChromHMM/ChromHMM.jar LearnModel -b 300 -l  ${chrom_sizes} input_binarized output_learn ${n_states} ${chrom_sizes}
     """
 }
+
 
 */

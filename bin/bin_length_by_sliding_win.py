@@ -46,20 +46,23 @@ print >> stderr, "Coordinates for time period intersection: %s" % ' '.join(str(c
 print >> stderr, "Values to perform the binning: %s" % ' '.join(str(b) for b in args.bins)
 
 bed_file_meals = args.bed_file
+coord_period = args.coordinates_time_to_bed
+bins = [ int(i) for i in args.bins ]
+
 bed_meals = pybedtools.BedTool(bed_file_meals)
 
-coord_period = args.coordinates_time_to_bed
 bed_period = [("chr1", coord_period[0], coord_period[1], " ", 0, 0)]
 
 bed_meals_by_period = bed_meals.intersect(pybedtools.BedTool(bed_period))
 
-bins = [ int(i) for i in args.bins ]
-
 for i, b in enumerate(bins):
     if i == 0:
-        bed_meals_by_period.filter(greater_than, 0).filter(less_than, b+1).saveas("0_" + str(b) + "_" + path.basename(bed_file_meals)) # < 31  <=30, include 30
+        bed_meals_by_period.filter(greater_than, 0).filter(less_than, b+1).saveas("0_" + str(b) + "_" + \
+                                                           path.basename(bed_file_meals)) # < 31  <=30, include 30
     elif i == len(bins) - 1:
-        bed_meals_by_period.filter(greater_than, bins[i-1]).filter(less_than, b+1).saveas(str(bins[i-1]) + "_" + str(b) + "_" + path.basename(bed_file_meals)) # > 30, 30 not included, <121, <=120 include 120
+        bed_meals_by_period.filter(greater_than, bins[i-1]).filter(less_than, b+1).saveas(str(bins[i-1]) + \
+                                                                   "_" + str(b) + "_" + path.basename(bed_file_meals)) # > 30, 30 not included, <121, <=120 include 120
         bed_meals_by_period.filter(greater_than, b).saveas(str(b) + "_" + path.basename(bed_file_meals)) # >120
     else:
-        bed_meals_by_period.filter(greater_than, bins[i - 1]).filter(less_than, b+1).saveas(str(bins[i-1]) + "_" + str(b) + "_" + path.basename(bed_file_meals)) # > 30 # < 121 <= 120
+        bed_meals_by_period.filter(greater_than, bins[i - 1]).filter(less_than, b+1).saveas(str(bins[i-1]) + \
+                                                                     "_" + str(b) + "_" + path.basename(bed_file_meals)) # > 30 # < 121 <= 120
