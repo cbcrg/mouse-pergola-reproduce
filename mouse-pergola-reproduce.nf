@@ -47,7 +47,8 @@ log.info "mappings phases          : ${params.mappings_phase}"
 log.info "experimental info        : ${params.exp_info}"
 log.info "output                   : ${params.output}"
 log.info "image format             : ${params.image_format}"
-log.info "chromHMM config table    : ${params.tbl_chromHMM}"
+log.info "chromHMM ct config table : ${params.tbl_chromHMM_ctrl}"
+log.info "chromHMM hf config table : ${params.tbl_chromHMM_hf}"
 log.info "\n"
 
 // Example command to run the script
@@ -61,7 +62,8 @@ nextflow run mouse-pergola-reproduce.nf \
   --mappings_phase='small_data/mappings/f2g.txt' \
   --exp_info='small_data/mappings/exp_info.txt' \
   --image_format='png' \
-  --tbl_chromHMM="small_data/chromHMM_files/cellmarkfiletable" \
+  --tbl_chromHMM_ctrl="small_data/chromHMM_files/cellmarkfiletable_ctrl" \
+  --tbl_chromHMM_hf="small_data/chromHMM_files/cellmarkfiletable_hf" \
   -with-docker
 */
 
@@ -77,7 +79,8 @@ exp_phases = file(params.phases)
 exp_phases_long = file(params.phases_long)
 exp_info = file(params.exp_info)
 
-cell_mark_file_tbl = file(params.tbl_chromHMM)
+cell_mark_file_tbl_ctrl = Channel.fromPath(params.tbl_chromHMM_ctrl)
+cell_mark_file_tbl_hf = Channel.fromPath(params.tbl_chromHMM_hf)
 
 /*
  * Input files validation
@@ -87,7 +90,17 @@ if( !mapping_file_phase.exists() ) exit 1, "Missing mapping phases file: ${mappi
 if( !exp_phases.exists() ) exit 1, "Missing phases file: ${exp_phases}"
 if( !exp_phases_long.exists() ) exit 1, "Missing long phases file: ${exp_phases_long}"
 if( !exp_info.exists() ) exit 1, "Missing experimental info file: ${exp_info}"
-if( !cell_mark_file_tbl.exists() ) exit 1, "Missing configuration file for chromHMM: ${cell_mark_file_tbl}"
+//if( !cell_mark_file_tbl_ctrl.first().exists() ) exit 1, "Missing configuration file for chromHMM ctrl: ${cell_mark_file_tbl_ctrl}"
+//if( !cell_mark_file_tbl_hf.first().exists() ) exit 1, "Missing configuration file for chromHMM hf: ${cell_mark_file_tbl_hf}"
+
+cell_mark_file_tbl_ctrl_labelled = cell_mark_file_tbl_ctrl.map {
+                                        [ it, "ctrl" ]
+                                   }
+cell_mark_file_tbl_hf_labelled = cell_mark_file_tbl_hf.map {
+                                        [ it, "hf" ]
+                                   }
+
+cell_mark_file_tbl = cell_mark_file_tbl_ctrl_labelled.mix ( cell_mark_file_tbl_hf_labelled )
 
 /*
  * Read image format
@@ -197,7 +210,8 @@ process convert_bed {
 
   	output:
   	file 'tr*food*.bed' into bed_out, bed_out_shiny_p, bed_out_gviz, bed_out_sushi
-  	file 'dir_bed' into dir_bed_to_chromHMM
+  	file 'dir_bed_ctrl' into dir_bed_to_chromHMM_ctrl
+  	file 'dir_bed_hf' into dir_bed_to_chromHMM_hf
   	// file 'tr*{water,sac}*.bed' into bed_out_drink
   	file 'phases_light.bed' into phases_night
   	file '*.fa' into out_fasta
@@ -211,6 +225,7 @@ process convert_bed {
   	for f in {1,3,,5,7,11,13,15,17}
   	do
   	    mkdir -p work_dir
+  	    mkdir -p dir_bed_ctrl
 
   	    files=( tr_"\$f"_* )
 
@@ -224,6 +239,7 @@ process convert_bed {
   	        in_f_sc=`ls tr_chr1*food_sc.bed`
             mv "\$in_f_sc" "`echo \$in_f_sc | sed s/chr1/\${f}/`"
   	        cd ..
+  	        cp work_dir/tr*.bed ./dir_bed_ctrl/
   	        mv work_dir/tr*.bed ./
   	        mv work_dir/*.fa ./
         fi
@@ -232,6 +248,7 @@ process convert_bed {
     for f in {2,4,8,10,12,14,16,18}
   	do
   	    mkdir -p work_dir
+        mkdir -p dir_bed_hf
 
   	    files=( tr_"\$f"_* )
 
@@ -245,15 +262,25 @@ process convert_bed {
   	        in_f_sc=`ls tr_chr1*food_sc.bed`
             mv "\$in_f_sc" "`echo \$in_f_sc | sed s/chr1/\${f}/`"
   	        cd ..
+  	        cp work_dir/tr*.bed ./dir_bed_hf/
   	        mv work_dir/tr*.bed ./
   	        mv work_dir/*.fa ./
         fi
   	done
 
-  	mkdir dir_bed
-  	cp tr*.bed ./dir_bed
+
   	"""
 }
+
+dir_bed_to_chromHMM_ctrl_labelled = dir_bed_to_chromHMM_ctrl.map {
+                                        [ it, "ctrl" ]
+                                    }
+
+dir_bed_to_chromHMM_hf_labelled = dir_bed_to_chromHMM_hf.map {
+                                    [ it, "hf" ]
+                                  }
+
+dir_bed_to_chromHMM = dir_bed_to_chromHMM_ctrl_labelled.mix (dir_bed_to_chromHMM_hf_labelled)
 
 result_dir_shiny_p = file("$baseDir/files")
 
@@ -560,18 +587,20 @@ bins = Channel
 bins="30 120"
 bins_tbl = bins
 
+dir_bed_to_chromHMM_win = dir_bed_to_chromHMM.spread (start_end_win)
+
+
 process bin {
 
     publishDir "results/", mode: 'copy', overwrite: 'true'
 
     input:
     file chrom_sizes from chrom_sizes_chromHMM_bin.first()
-    file dir_bed_feeding from dir_bed_to_chromHMM.first()
-    set val (index), val (start), val (end) from start_end_win
+    set file (dir_bed_feeding), val (group), val (index), val (start), val (end) from dir_bed_to_chromHMM_win
     val bins
 
     output:
-    set index, 'output_bed_binned' into output_dir_binned
+    set index, group, 'output_bed_binned' into output_dir_binned
 
     """
     rm -f [0-9]*.bed
@@ -592,11 +621,11 @@ process create_chromHMM_table {
     publishDir "results/", mode: 'copy', overwrite: 'true'
 
     input:
-    file 'cellmarkfiletable' from cell_mark_file_tbl
+    set file ('cellmarkfiletable'), val (group) from cell_mark_file_tbl
     val bins_tbl
 
     output:
-    file '*.binned' into cell_mark_file_tbl_binned
+    set '*.binned', group into cell_mark_file_tbl_binned
 
     """
 
@@ -619,6 +648,11 @@ process create_chromHMM_table {
     """
 }
 
+output_dir_binned_and_cell_mark_tbl = output_dir_binned.spread ( cell_mark_file_tbl_binned )
+                                        .filter { it[1] == it[4] }
+                                        .map { [ it[0], it[1], it[2], it[3] ] }
+
+
 /*
  * chromHMM binarizes feeding bed files
  */
@@ -628,11 +662,12 @@ process binarize {
 
     input:
     file chrom_sizes from chrom_sizes_chromHMM_binarize.first()
-    set val (index), file (dir_bed_feeding) from output_dir_binned
-    file 'cellmarkfiletable' from cell_mark_file_tbl_binned
+    //set val (index), val (group), file (dir_bed_feeding) from output_dir_binned
+    //set file ('cellmarkfiletable'), val (group) from cell_mark_file_tbl_binned
+    set val (index), val (group), file (dir_bed_feeding), file ('cellmarkfiletable') output_dir_binned_and_cell_mark_tbl
 
     output:
-    set index, 'output_dir' into output_dir_binarized
+    set index, group, 'output_dir' into output_dir_binarized
 
     """
     mkdir output_dir
@@ -648,21 +683,22 @@ process HMM_model_learn {
 
     input:
     file chrom_sizes from chrom_sizes_chromHMM_l.first()
-    set val (index), file ('input_binarized') from output_dir_binarized
+    set val (index), val (group), file ('input_binarized') from output_dir_binarized
 
     output:
-    file 'output_learn/*dense*.bed' into HMM_model_ANNOTATED_STATES
-    set index, 'output_learn/*.*' into HMM_full_results
-    file 'model.tbl' into model
+    set group, 'output_learn/*dense*.bed' into HMM_model_ANNOTATED_STATES
+    set group, index, 'output_learn/*.*' into HMM_full_results
+    set group, 'model.tbl' into model
 
     """
-    mkdir output_learn
+    mkdir output_learn_${group}
     # java -mx4000M -jar /ChromHMM/ChromHMM.jar LearnModel -b 300 -l  ${chrom_sizes}  -printstatebyline test_feeding/output/outputdir test_feeding/output/outputdir_learn ${n_states} test_feeding/input/chrom.sizes
-    java -mx4000M -jar /ChromHMM/ChromHMM.jar LearnModel -b 300 -l  ${chrom_sizes} input_binarized output_learn ${n_states} ${chrom_sizes}
+    java -mx4000M -jar /ChromHMM/ChromHMM.jar LearnModel -b 300 -l  ${chrom_sizes} input_binarized output_learn${group} ${n_states} ${chrom_sizes}
 
     # cat "emissions_"${n_states}".txt" | head -1 | awk -v index_v=${index} '{index_v"\t"\$0}' > emissions.tbl
 
-    tail +2 output_learn"/model_"${n_states}".txt" | awk -v index_v=${index} '{print index_v"\t"\$0}' >> model.tbl
+    tail +2 output_learn${group}"/model_"${n_states}".txt" | awk -v index_v=${index} \
+                                                                 -v group=${group} '{print index_v"\t"group"\t"\$0}' >> model.tbl
     """
 }
 
@@ -670,12 +706,12 @@ process subset_tbl_by_trans_emission {
     publishDir "${params.output_res}/chromHMM", mode: 'copy', overwrite: 'true'
 
     input:
-    file 'model.tbl' from model.collectFile()
+    set val (group), file ('model.tbl') from model.collectFile()
 
     output:
-    file 'emission_prob.tbl' into emissions
-    file 'transition_prob.tbl' into transitions
-    file 'prob_init.tbl' into probs_init
+    set group, 'emission_prob.tbl' into emissions
+    set group, 'transition_prob.tbl' into transitions
+    set group, 'prob_init.tbl' into probs_init
 
     """
     tail +2  model.tbl | grep "emissionprobs" >> emission_prob.tbl
