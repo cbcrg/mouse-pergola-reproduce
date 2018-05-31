@@ -664,7 +664,7 @@ process binarize {
     file chrom_sizes from chrom_sizes_chromHMM_binarize.first()
     //set val (index), val (group), file (dir_bed_feeding) from output_dir_binned
     //set file ('cellmarkfiletable'), val (group) from cell_mark_file_tbl_binned
-    set val (index), val (group), file (dir_bed_feeding), file ('cellmarkfiletable') output_dir_binned_and_cell_mark_tbl
+    set val (index), val (group), file (dir_bed_feeding), file ('cellmarkfiletable') from output_dir_binned_and_cell_mark_tbl
 
     output:
     set index, group, 'output_dir' into output_dir_binarized
