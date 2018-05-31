@@ -171,21 +171,21 @@ for exp_group, dict_exp_gr in bed_dict.iteritems():
 
             ### bouts per week
             weeks_bed = pybedtools.BedTool(weeks_bed_f)
-            weeks_bed.intersect(bed_BedTools, c=True).moveto("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + "n_bouts.tbl")
+            weeks_bed.intersect(bed_BedTools, c=True).saveas("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + "n_bouts.tbl")
 
             ### mean value
             statistic="mean"
-            weeks_bed.map(bed_BedTools, c=5, o=statistic, null=0).moveto("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + 'mean.tbl')
+            weeks_bed.map(bed_BedTools, c=5, o=statistic, null=0).saveas("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + 'mean.tbl')
 
             ### eating rate
-            weeks_bed.map(bed_BedTools.each(rate_bed), c=5, o=statistic, null=0).moveto("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + 'rate.tbl')
+            weeks_bed.map(bed_BedTools.each(rate_bed), c=5, o=statistic, null=0).saveas("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + 'rate.tbl')
 
             ### meal duration
-            weeks_bed.map(bed_BedTools.each(length_bed), c=5, o=statistic, null=0).moveto("tr_"+ tr[0] + '.'+ exp_group+ '.' + data_type + '.' + 'duration.tbl')
+            weeks_bed.map(bed_BedTools.each(length_bed), c=5, o=statistic, null=0).saveas("tr_"+ tr[0] + '.'+ exp_group+ '.' + data_type + '.' + 'duration.tbl')
 
             ### intermeal interval
             weeks_bed.map(weeks_bed.intersect(bed_BedTools.complement(g=chr_file)).each(length_bed).sort(), c=5, o=statistic, null=0)\
-                .moveto("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + 'intermeal_time.tbl')
+                .saveas("tr_"+ tr[0] + '.' + exp_group + '.' + data_type + '.' + 'intermeal_time.tbl')
 
             for key, bed_phase in d_exp_phases_bed.iteritems():
                 exp_phase = key[1]
