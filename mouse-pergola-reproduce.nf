@@ -180,7 +180,7 @@ process heatmap {
 
 def igv_files_by_group ( file ) {
 
-    def map_id_group = [ "ctrl" : [1,3,5,7,11,13,15,17],
+    def map_id_group = [ "ctrl" : [1,3,5,7,9,11,13,15,17],
                          "hf" : [2,4,8,10,12,14,16,18] ]
 
     def id = file.split("\\_")[1]
@@ -222,7 +222,7 @@ process convert_bed {
     shopt -s nullglob
 
 	## ctrl
-  	for f in {1,3,,5,7,11,13,15,17}
+  	for f in {1,3,,5,7,9,11,13,15,17}
   	do
   	    mkdir -p work_dir
   	    mkdir -p dir_bed_ctrl
@@ -413,7 +413,7 @@ bedGraph_out_bigwig_short_name = bedGraph_out_bigwig.flatten().map {
  * For each pair get the correlation using bigwig
  */
 process bedgraph_to_bigWig {
-    container = '089a918d085e'
+    //container = '089a918d085e'
     publishDir "results_new/", mode: 'copy', overwrite: 'true'
 
   	input:
@@ -430,7 +430,7 @@ process bedgraph_to_bigWig {
 }
 
 process deep_tools_matrix {
-    container = '089a918d085e'
+    //container = '089a918d085e'
     publishDir "results_new/", mode: 'copy', overwrite: 'true'
 
     input:
@@ -473,7 +473,7 @@ whole plot
 //file '*.png' into heatmap_deepTools
 
 process deep_tools_heatmap {
-    container = '089a918d085e'
+    //container = '089a918d085e'
     publishDir "results_new/", mode: 'copy', overwrite: 'true'
 
     input:
@@ -499,7 +499,7 @@ process deep_tools_heatmap {
 }
 
 process deep_tools_profile {
-    container = '089a918d085e'
+    //container = '089a918d085e'
     publishDir "results_new/", mode: 'copy', overwrite: 'true'
 
     input:
@@ -520,7 +520,7 @@ process deep_tools_profile {
 
 /*
 process deep_tools_bigWigSummary {
-    container = '089a918d085e'
+    //container = '089a918d085e'
     publishDir "results_new/", mode: 'copy', overwrite: 'true'
 
     input:
@@ -547,7 +547,7 @@ process deep_tools_bigWigSummary {
 
 /*
 process deep_tools_pca {
-    container = '089a918d085e'
+    //container = '089a918d085e'
     publishDir "results_new/", mode: 'copy', overwrite: 'true'
 
     input:
@@ -686,18 +686,18 @@ process HMM_model_learn {
     set val (index), val (group), file ('input_binarized') from output_dir_binarized
 
     output:
-    set group, 'output_learn/*dense*.bed' into HMM_model_ANNOTATED_STATES
-    set group, index, 'output_learn/*.*' into HMM_full_results
-    set group, 'model.tbl' into model
+    set group, "output_learn_${group}/*dense*.bed" into HMM_model_ANNOTATED_STATES
+    set group, index, "output_learn_${group}/*.*" into HMM_full_results
+    set 'model.tbl' into model
 
     """
     mkdir output_learn_${group}
     # java -mx4000M -jar /ChromHMM/ChromHMM.jar LearnModel -b 300 -l  ${chrom_sizes}  -printstatebyline test_feeding/output/outputdir test_feeding/output/outputdir_learn ${n_states} test_feeding/input/chrom.sizes
-    java -mx4000M -jar /ChromHMM/ChromHMM.jar LearnModel -b 300 -l  ${chrom_sizes} input_binarized output_learn${group} ${n_states} ${chrom_sizes}
+    java -mx4000M -jar /ChromHMM/ChromHMM.jar LearnModel -b 300 -l  ${chrom_sizes} input_binarized output_learn_${group} ${n_states} ${chrom_sizes}
 
     # cat "emissions_"${n_states}".txt" | head -1 | awk -v index_v=${index} '{index_v"\t"\$0}' > emissions.tbl
 
-    tail +2 output_learn${group}"/model_"${n_states}".txt" | awk -v index_v=${index} \
+    tail +2 output_learn_${group}"/model_"${n_states}".txt" | awk -v index_v=${index} \
                                                                  -v group=${group} '{print index_v"\t"group"\t"\$0}' >> model.tbl
     """
 }
@@ -706,12 +706,12 @@ process subset_tbl_by_trans_emission {
     publishDir "${params.output_res}/chromHMM", mode: 'copy', overwrite: 'true'
 
     input:
-    set val (group), file ('model.tbl') from model.collectFile()
+    file 'model.tbl' from model.collectFile()
 
     output:
-    set group, 'emission_prob.tbl' into emissions
-    set group, 'transition_prob.tbl' into transitions
-    set group, 'prob_init.tbl' into probs_init
+    set 'emission_prob.tbl' into emissions
+    set 'transition_prob.tbl' into transitions
+    set 'prob_init.tbl' into probs_init
 
     """
     tail +2  model.tbl | grep "emissionprobs" >> emission_prob.tbl
