@@ -698,7 +698,17 @@ process HMM_model_learn {
     # cat "emissions_"${n_states}".txt" | head -1 | awk -v index_v=${index} '{index_v"\t"\$0}' > emissions.tbl
 
     tail +2 output_learn_${group}"/model_"${n_states}".txt" | awk -v index_v=${index} \
-                                                                 -v group=${group} '{print index_v"\t"group"\t"\$0}' >> model.tbl
+                                                                  -v group=${group} '{print index_v"\t"group"\t"\$0}' >> model.tbl
+
+    ## change color of annotations
+    for dense_file in output_learn_${group}/*segments*.bed
+    do
+        filename=\$(basename -- "\$dense_file")
+        filename="\${filename%.*}"
+        mice_id=\$(echo \$filename | cut -f2 -d_)
+
+        java -mx4000M -jar /ChromHMM/ChromHMM.jar MakeBrowserFiles -c colormappingfile \${dense_file} \${mice_id} \${filename}
+    done
     """
 }
 
@@ -721,8 +731,8 @@ process subset_tbl_by_trans_emission {
 
 }
 
-emissions.println()
-transitions.println()
+// emissions.println()
+// transitions.println()
 
 /*
 
