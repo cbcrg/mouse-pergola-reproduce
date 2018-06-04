@@ -862,13 +862,23 @@ process HMM_model_learn {
     file 'input_binarized' from output_dir_binarized
 
     output:
-    file 'output_learn/*dense*.bed' into HMM_model_ANNOTATED_STATES
+    file '*dense*.bed' into HMM_model_ANNOTATED_STATES
     file 'output_learn/*.*' into HMM_full_results
 
     """
     mkdir output_learn
     # java -mx4000M -jar /ChromHMM/ChromHMM.jar LearnModel -b 300 -l  ${chrom_sizes}  -printstatebyline test_feeding/output/outputdir test_feeding/output/outputdir_learn ${n_states} test_feeding/input/chrom.sizes
     java -mx4000M -jar /ChromHMM/ChromHMM.jar LearnModel -b 300 -l  ${chrom_sizes} input_binarized output_learn ${n_states} ${chrom_sizes}
+
+    ## change color of annotations
+    for dense_file in output_learn/*segments*.bed
+    do
+        filename=\$(basename -- "\$dense_file")
+        filename="\${filename%.*}"
+        mice_id=\$(echo \$filename | cut -f2 -d_)
+
+        java -mx4000M -jar /ChromHMM/ChromHMM.jar MakeBrowserFiles -c colormappingfile \${dense_file} \${mice_id} \${filename}
+    done
     """
 }
 
