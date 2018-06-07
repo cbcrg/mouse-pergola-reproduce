@@ -707,7 +707,7 @@ process HMM_model_learn {
         filename="\${filename%.*}"
         mice_id=\$(echo \$filename | cut -f2 -d_)
 
-        java -mx4000M -jar /ChromHMM/ChromHMM.jar MakeBrowserFiles -c colormappingfile \${dense_file} \${mice_id} \${filename}
+        java -mx4000M -jar /ChromHMM/ChromHMM.jar MakeBrowserFiles -c colormappingfile \${dense_file} \${mice_id} \${filename} ${chrom_sizes}
     done
     """
 }
@@ -734,21 +734,25 @@ process subset_tbl_by_trans_emission {
 // emissions.println()
 // transitions.println()
 
-/*
-
 process plot_transistions {
-    publishDir "${params.output_res}/chromHMM", mode: 'copy', overwrite: 'true'
+    publishDir "${params.output_res}/results_segmentation", mode: 'copy', overwrite: 'true'
 
     input:
+    file emissions_tbl from emissions
     file transitions_tbl from transitions
 
+    output:
+
+    file "transition.${image_format}" into transition_plot
+    file "emission.${image_format}" into emission_plot
+
     """
-    plot_model_evolution.R --path2tbl=${transitions_tbl} --image_format=${image_format}
+    plot_em_trans_by_win.R --path2ems=${emissions_tbl} \
+                           --path2trans=${transitions_tbl} \
+                           --image_format=${image_format}
     """
 
 }
-*/
-
 
 /*
 # awk '{print \$1"\t""30_"\$2"\t""30_"\$3}' cellmarkfiletable > "${cellmarkfiletable}.binned"
