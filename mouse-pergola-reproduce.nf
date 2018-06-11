@@ -326,11 +326,13 @@ process convert_bedGraph {
   	file 'tr*food*.bedGraph' into bedGraph_out, bedGraph_out_shiny_p, bedGraph_out_gviz, bedGraph_out_sushi, bedGraph_out_bigwig
   	file 'chrom.sizes' into chrom_sizes, chrom_sizes_chromHMM_bin, chrom_sizes_chromHMM_binarize, chrom_sizes_chromHMM_l
   	//file 'tr*{water,sac}*.bedGraph' into bedGraph_out_drink
-    stdout into len_experiment_days
+    //stdout into len_experiment_days
+    stdout into len_experiment_weeks
 
   	"""
   	pergola_rules.py -i ${batch_bg} -m ${mapping_file_bG} -max ${max} -f bedGraph -w 1800 -nt -e -dl food_sc food_fat -d all
-  	awk '{printf "%i", \$2/3600/24}' chrom.sizes
+  	# awk '{printf "%i", \$2/3600/24}' chrom.sizes
+  	awk '{printf "%i", \$2/604800}' chrom.sizes
   	"""
 }
 
@@ -564,13 +566,17 @@ process deep_tools_pca {
 }
 */
 
-step = 3600 * 24
+//step = 3600 * 24
+step = 604800
 window = 604800
-len_days = len_experiment_days.getVal().toInteger()
-
+//len_days = len_experiment_days.getVal().toInteger()
+len_weeks = len_experiment_weeks.getVal().toInteger()
 start_end_win = Channel
-                    .from( 0..len_days )
+                    .from( 0..len_weeks )
+                    //.from( 0..len_days )
                     .map { [ it, 1 + (it * step),  + window + (it * step) ] }
+
+//start_end_win.println()
 
 // para ordenar actograms
 /*
@@ -580,16 +586,18 @@ Channel
 */
 
 
-bins = Channel
-           .from( 30, 120 )
-//           .toList()
-//           .map { it.join(" ")}
-bins="30 120"
+//bins="30 120"
+bins="30"
 bins_tbl = bins
 
 dir_bed_to_chromHMM_win = dir_bed_to_chromHMM.spread (start_end_win)
+//dir_bed_to_chromHMM_win.into { culo; dir_bed_to_chromHMM_win } //del
+//culo.println() //del
 
-
+/*
+ * Intersects the data with the given start and end and produces the files containing the meals corresponding to a
+ * given bin
+ */
 process bin {
 
     publishDir "results/", mode: 'copy', overwrite: 'true'
@@ -610,7 +618,7 @@ process bin {
         # bin_length_by_sliding_win.py -b \${file_bed} -ct 1 604800 -bins 30 120
         bin_length_by_sliding_win.py -b \${file_bed} -ct ${start} ${end} -bins ${bins}
     done
-
+    echo ${index}
     mkdir output_bed_binned
     mv *.bed output_bed_binned
     """
@@ -628,7 +636,6 @@ process create_chromHMM_table {
     set '*.binned', group into cell_mark_file_tbl_binned
 
     """
-
     bins_ary=(${bins})
     length_ary=\${#bins_ary[@]}
     i_last=\$((length_ary-1))
@@ -670,12 +677,32 @@ process binarize {
     set index, group, 'output_dir' into output_dir_binarized
 
     """
+    cat ${cellmarkfiletable} > ${cellmarkfiletable}".filtered"
+
+    if [ "$index" -eq "2" ]
+    then
+        cat ${cellmarkfiletable} | grep -v "tr_18" | grep -v "tr_10" | grep -v "tr_12" > ${cellmarkfiletable}".filtered"
+    fi
+
+    if [ "$index" -eq "4" ]
+    then
+        # cat ${cellmarkfiletable} | grep -v "tr_7" | grep -v "tr_17" > ${cellmarkfiletable}".filtered" # ok
+        cat ${cellmarkfiletable} | grep -v "tr_7" > ${cellmarkfiletable}".filtered" # con esto medio bien pero hay pico
+    fi
+
+    if [ "$index" -eq "6" ]
+    then
+        cat ${cellmarkfiletable} |  grep -v "tr_3" |  grep -v "tr_17" > ${cellmarkfiletable}".filtered"
+        #  grep -v "tr_1_"
+    fi
+
     mkdir output_dir
-    java -mx1000M -jar /ChromHMM/ChromHMM.jar BinarizeBed -b 300 -peaks ${chrom_sizes} ${dir_bed_feeding} ${cellmarkfiletable} output_dir
+    # java -mx1000M -jar /ChromHMM/ChromHMM.jar BinarizeBed -b 300 -peaks ${chrom_sizes} ${dir_bed_feeding} ${cellmarkfiletable} output_dir
+    java -mx1000M -jar /ChromHMM/ChromHMM.jar BinarizeBed -b 300 -peaks ${chrom_sizes} ${dir_bed_feeding} ${cellmarkfiletable}".filtered" output_dir
     """
 }
 
-n_states = 3
+n_states = 2
 
 process HMM_model_learn {
 
@@ -688,7 +715,7 @@ process HMM_model_learn {
     output:
     set group, "output_learn_${group}/*dense*.bed" into HMM_model_ANNOTATED_STATES
     set group, index, "output_learn_${group}/*.*" into HMM_full_results
-    set 'model.tbl' into model
+    file 'model.tbl' into model
 
     """
     mkdir output_learn_${group}
@@ -719,9 +746,9 @@ process subset_tbl_by_trans_emission {
     file 'model.tbl' from model.collectFile()
 
     output:
-    set 'emission_prob.tbl' into emissions
-    set 'transition_prob.tbl' into transitions
-    set 'prob_init.tbl' into probs_init
+    file 'emission_prob.tbl' into emissions
+    file 'transition_prob.tbl' into transitions
+    file 'prob_init.tbl' into probs_init
 
     """
     tail +2  model.tbl | grep "emissionprobs" >> emission_prob.tbl
@@ -866,7 +893,6 @@ process binarize {
     """
 }
 
-n_states = 3
 process HMM_model_learn {
 
     publishDir "${params.output_res}/chromHMM", mode: 'copy', overwrite: 'true'

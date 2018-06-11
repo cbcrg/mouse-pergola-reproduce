@@ -110,6 +110,8 @@ pwd <- getwd()
 cbb_palette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 # path2ems <- "/Users/jespinosa/Desktop/tbls_HMM/emission_prob.tbl"
+# path2ems <- "/Users/jespinosa/git/cbcrg/mouse-pergola-reproduce/results/chromHMM/emission_prob_win.tbl"
+# path2ems <- "/Users/jespinosa/git/cbcrg/mouse-pergola-reproduce/results/chromHMM/emission_prob.tbl"
 data.frame_prob_emission <- read.csv(path2ems, header=F, sep="\t")
 
 colnames(data.frame_prob_emission) <- c("day", "group", "prob_mode", "State", "Emission_n", "Emission", "binary", "prob")
@@ -183,6 +185,7 @@ data.frame_prob_emission_filt$State <- gsub("s", "", data.frame_prob_emission_fi
 data.frame_prob_emission_filt$emission_translated <- gsub ("0_30_food", "Short meals", data.frame_prob_emission_filt$Emission)
 data.frame_prob_emission_filt$emission_translated <- gsub ("30_120_food", "Mid meals", data.frame_prob_emission_filt$emission_translated)
 data.frame_prob_emission_filt$emission_translated <- gsub ("120_food", "Long meals", data.frame_prob_emission_filt$emission_translated)
+data.frame_prob_emission_filt$emission_translated <- gsub ("30_food", "Long meals", data.frame_prob_emission_filt$emission_translated)
 
 data.frame_prob_emission_filt$state_emission <- paste(data.frame_prob_emission_filt$State, data.frame_prob_emission_filt$emission_translated,  sep="_")
 
@@ -193,6 +196,11 @@ data.frame_prob_emission_filt$state_emission <- paste(data.frame_prob_emission_f
 #   theme(plot.title = element_text(hjust = 0.5)) 
 xmin <- 0
 xmax <- 62
+xmin <- 0
+xmax <- 8
+
+ymin <- 0
+ymax <- 1
 
 ggplot(data.frame_prob_emission_filt, aes(x=day, y=prob, group=group,  colour=group)) + 
   geom_line() +
@@ -200,12 +208,14 @@ ggplot(data.frame_prob_emission_filt, aes(x=day, y=prob, group=group,  colour=gr
   facet_grid(State ~ emission_translated) +
   labs(title = "States emissions (1 week window with 1 day step)\n", x = "\nDays", y="Probability\n") +
   scale_x_continuous (limits=c(xmin, xmax)) +
+  scale_y_continuous (limits=c(ymin, ymax)) +
   theme(plot.title = element_text(hjust = 0.5)) +
   scale_color_manual(values = cbb_palette, name='', labels = c("Ctrl", "HF")) +
-  theme (legend.key.size = unit(0.8, "cm"), legend.title = element_blank()) +
-  geom_vline(xintercept = 6, linetype="dashed") +
-  geom_vline(xintercept = 12, linetype="dashed")
-
+  theme (legend.key.size = unit(0.8, "cm"), legend.title = element_blank()) # +
+  # geom_vline(xintercept = 6, linetype="dashed") +
+  # geom_vline(xintercept = 12, linetype="dashed")
+# 4*7 --> 28
+# 6*7 --> 42
 plot_width <- 13
 plot_height <- 8
 
@@ -219,8 +229,8 @@ ggsave (file=name_out, width = plot_width, height=plot_height)
 data.frame_prob_trans <- read.csv(path2trans, header=F, sep="\t")
 head (data.frame_prob_trans)
 
-path2tbl_trans <- "/Users/jespinosa/git/cbcrg/mouse-pergola-reproduce/results/chromHMM/transition_prob.tbl"
-data.frame_prob_trans_2 <- read.csv(path2tbl_trans, header=F, sep="\t")
+# path2trans <- "/Users/jespinosa/git/cbcrg/mouse-pergola-reproduce/results/chromHMM/transition_prob.tbl"
+data.frame_prob_trans_2 <- read.csv(path2trans, header=F, sep="\t")
 summary(data.frame_prob_trans_2$V6)
 summary(data.frame_prob_trans$V6)
 
@@ -332,18 +342,24 @@ data.frame_prob_trans$transition <- paste(data.frame_prob_trans$State_ini, data.
 
 xmin <- 0
 xmax <- 62
+xmin <- 0
+xmax <- 8
 
+ymin <- 0
+ymax <- 1
+  
 ggplot(data.frame_prob_trans, aes(x=day, y=prob, group=group,  colour=group)) + 
   geom_line() +
   facet_grid(State_ini ~ State_end) +
   labs(title = "State transitions (1 week window with 1 day step)\n", x = "\nDays", y="Probability\n") +
   # scale_x_continuous (breaks=breaks_v, limits=c(xmin, xmax)) +
   scale_x_continuous (limits=c(xmin, xmax)) +
+  scale_y_continuous (limits=c(ymin, ymax)) +
   theme(plot.title = element_text(hjust = 0.5)) +
   scale_color_manual(values = cbb_palette, name='', labels = c("Ctrl", "HF")) +
-  theme (legend.key.size = unit(0.8, "cm"), legend.title = element_blank()) +
-  geom_vline(xintercept = 6, linetype="dashed") +
-  geom_vline(xintercept = 42, linetype="dashed")
+  theme (legend.key.size = unit(0.8, "cm"), legend.title = element_blank()) #+
+  # geom_vline(xintercept = 6, linetype="dashed") +
+  # geom_vline(xintercept = 42, linetype="dashed")
 
 plot_width <- 13
 plot_height <- 8

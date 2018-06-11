@@ -343,9 +343,10 @@ plot_name <- "mice_gviz_viz"
 p <- plotTracks(c(g_tr, unlist(l_gr_annotation_tr_bed), unlist(l_gr_data_tr_bg), phases_tr, unlist(ctracks)),
 	       ##different windows of time selected
            # from=0, to=1814400, # 3 weeks
-           from=26953, to=1841353, # 3 weeks # Shift the first hours until 8PM, this way phases look nicer
+           # from=26953, to=1841353, # 3 weeks # Shift the first hours until 8PM, this way phases look nicer
            # from=26953, to=604800+26953, #habituation week
-           # from=26953, to=5443200, # 9 weeks
+           from=26953, to=5443200, # 9 weeks
+           # from=3628801, to=4233600, # week 7 (6 of development)
            ##range of heatmap data
            shape = "box", stacking = "dense",
            fontsize=size_labels, cex=cex_gtrack)
