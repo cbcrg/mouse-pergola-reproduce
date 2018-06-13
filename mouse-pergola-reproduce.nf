@@ -222,7 +222,7 @@ process convert_bed {
     shopt -s nullglob
 
 	## ctrl
-  	for f in {1,3,,5,7,9,11,13,15,17}
+  	for f in {1,3,5,7,9,11,13,15,17}
   	do
   	    mkdir -p work_dir
   	    mkdir -p dir_bed_ctrl
@@ -280,7 +280,7 @@ dir_bed_to_chromHMM_hf_labelled = dir_bed_to_chromHMM_hf.map {
                                     [ it, "hf" ]
                                   }
 
-dir_bed_to_chromHMM = dir_bed_to_chromHMM_ctrl_labelled.mix (dir_bed_to_chromHMM_hf_labelled)
+dir_bed_to_chromHMM = dir_bed_to_chromHMM_ctrl_labelled.mix ( dir_bed_to_chromHMM_hf_labelled )
 
 result_dir_shiny_p = file("$baseDir/files")
 
@@ -679,7 +679,14 @@ process binarize {
     """
     cat ${cellmarkfiletable} > ${cellmarkfiletable}".filtered"
 
-    if [ "$index" -eq "2" ]
+    mkdir output_dir
+    # java -mx1000M -jar /ChromHMM/ChromHMM.jar BinarizeBed -b 300 -peaks ${chrom_sizes} ${dir_bed_feeding} ${cellmarkfiletable} output_dir
+    java -mx1000M -jar /ChromHMM/ChromHMM.jar BinarizeBed -b 300 -peaks ${chrom_sizes} ${dir_bed_feeding} ${cellmarkfiletable}".filtered" output_dir
+    """
+}
+
+/*
+if [ "$index" -eq "2" ]
     then
         cat ${cellmarkfiletable} | grep -v "tr_18" | grep -v "tr_10" | grep -v "tr_12" > ${cellmarkfiletable}".filtered"
     fi
@@ -696,12 +703,9 @@ process binarize {
         #  grep -v "tr_1_"
     fi
 
-    mkdir output_dir
-    # java -mx1000M -jar /ChromHMM/ChromHMM.jar BinarizeBed -b 300 -peaks ${chrom_sizes} ${dir_bed_feeding} ${cellmarkfiletable} output_dir
-    java -mx1000M -jar /ChromHMM/ChromHMM.jar BinarizeBed -b 300 -peaks ${chrom_sizes} ${dir_bed_feeding} ${cellmarkfiletable}".filtered" output_dir
-    """
-}
+*/
 
+/*
 n_states = 2
 
 process HMM_model_learn {
@@ -738,6 +742,88 @@ process HMM_model_learn {
     done
     """
 }
+*/
+
+ctrl = Channel
+    .from( 1,3,5,7,9,11,13,15,17 )
+
+hf = Channel
+    .from( 2,4,8,10,12,14,16,18 )
+
+output_dir_binarized.into { output_dir_binarized; output_dir_binarized_to_ctrl;  output_dir_binarized_to_hf }
+
+output_dir_binarized_ctrl = output_dir_binarized_to_ctrl.filter { it[1] == 'ctrl' }
+output_dir_binarized_hf = output_dir_binarized_to_hf.filter { it[1] == 'hf' }
+
+output_dir_to_binarized_ctrl = output_dir_binarized_ctrl.spread (ctrl)
+//output_dir_to_binarized_ctrl.println()
+
+output_dir_to_binarized_hf = output_dir_binarized_hf.spread (hf)
+//output_dir_to_binarized_hf.println()
+
+//dir_bed_to_chromHMM = dir_bed_to_chromHMM_ctrl_labelled.mix ( dir_bed_to_chromHMM_hf_labelled )
+
+
+//este
+output_dir_to_binarized_all = output_dir_to_binarized_ctrl.mix ( output_dir_to_binarized_hf )
+
+//dir_bed_to_chromHMM_win.into { culo; dir_bed_to_chromHMM_win } //del
+//output_dir_to_binarized_ctrl.println() //del
+//output_dir_to_binarized_hf.println() //del
+
+//output_dir_to_binarized_all.println() //del
+
+n_states = 2
+
+process HMM_model_learn {
+    tag { mice_id + "_" + index }
+
+    publishDir "${params.output_res}/chromHMM", mode: 'copy', overwrite: 'true'
+
+    input:
+    file chrom_sizes from chrom_sizes_chromHMM_l.first()
+    set val (index), val (group), file ('input_binarized'), val (mice_id) from output_dir_to_binarized_all
+
+    output:
+    set group, "output_learn/*dense*.bed" into HMM_model_ANNOTATED_STATES
+    set group, index, "output_learn/*.*" into HMM_full_results
+    file 'model.tbl' into model
+
+    """
+    mkdir output_learn
+    mkdir input_binarized_one_mouse
+
+    if [ ! -f input_binarized/tr_${mice_id}_chr1_binary.txt ]; then
+        touch output_learn/tr_${mice_id}dense_empty.bed
+        touch model.tbl
+        #echo -e "1\t$group\t${mice_id}\ttransitionprobs\t1\t1\tNA" > model1.tbl
+        #echo -e "1\t$group\t${mice_id}\ttransitionprobs\t1\t2\tNA" >> model1.tbl
+        #echo -e "1\t$group\t${mice_id}\ttransitionprobs\t2\t2\tNA" >> model1.tbl
+        #echo -e "1\t$group\t${mice_id}\ttransitionprobs\t2\t1\tNA" >> model1.tbl
+
+    else
+        cp input_binarized/tr_${mice_id}_* input_binarized_one_mouse
+
+        java -mx4000M -jar /ChromHMM/ChromHMM.jar LearnModel -b 300 -l  ${chrom_sizes} input_binarized_one_mouse output_learn ${n_states} ${chrom_sizes}
+
+        tail +2 output_learn"/model_"${n_states}".txt" | awk -v index_v=${index} \
+                                                             -v group=${group} \
+                                                             -v mice_id=${mice_id} \
+                                                             '{print index_v"\t"group"\t"mice_id"\t"\$0}' >> model.tbl
+    fi
+
+    ## change color of annotations
+    # for dense_file in output_learn/*segments*.bed
+    # do
+    #   filename=\$(basename -- "\$dense_file")
+    #   filename="\${filename%.*}"
+    #   mice_id=\$(echo \$filename | cut -f2 -d_)
+    #
+    #   java -mx4000M -jar /ChromHMM/ChromHMM.jar MakeBrowserFiles -c colormappingfile \${dense_file} \${mice_id} \${filename} ${chrom_sizes}
+    # done
+    """
+}
+
 
 process subset_tbl_by_trans_emission {
     publishDir "${params.output_res}/chromHMM", mode: 'copy', overwrite: 'true'
@@ -751,16 +837,16 @@ process subset_tbl_by_trans_emission {
     file 'prob_init.tbl' into probs_init
 
     """
-    tail +2  model.tbl | grep "emissionprobs" >> emission_prob.tbl
+    tail +2 model.tbl | grep "emissionprobs" >> emission_prob.tbl
     tail +2 model.tbl | grep "probinit" >> prob_init.tbl
-    tail +2  model.tbl | grep "transitionprobs" >> transition_prob.tbl
+    tail +2 model.tbl | grep "transitionprobs" >> transition_prob.tbl
     """
 
 }
 
 // emissions.println()
 // transitions.println()
-
+/*
 process plot_transistions {
     publishDir "${params.output_res}/results_segmentation", mode: 'copy', overwrite: 'true'
 
@@ -780,7 +866,7 @@ process plot_transistions {
     """
 
 }
-
+*/
 /*
 # awk '{print \$1"\t""30_"\$2"\t""30_"\$3}' cellmarkfiletable > "${cellmarkfiletable}.binned"
 # awk '{print \$1"\t""30_120"\$2"\t""30_120"\$3}' cellmarkfiletable >> "${cellmarkfiletable}.binned"
