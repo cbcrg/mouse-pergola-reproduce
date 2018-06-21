@@ -140,12 +140,14 @@ process behavior_by_week {
   	output:
   	file 'behaviors_by_week' into d_behaviors_by_week
   	stdout into max_time
-    file 'exp_phases' into exp_phases_bed_to_wr, exp_phases_bed_to_wr2
+    file 'exp_phases' into exp_phases_bed_to_wr, exp_phases_bed_to_wr2, exp_phases_bed_to_fraction
     file 'exp_phases_sushi' into exp_phases_bed_sushi, exp_phases_bed_gviz
 
 	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz, days_bed_igv, days_bed_shiny, days_bed_deepTools
-    file 'Habituation_dark_long.bed' into bed_dark_habituation
-    file 'Development_dark_long.bed' into bed_dark_development
+    file 'Habituation.bed' into habituation_to_fraction
+    file 'Development.bed' into development_to_fraction
+    file 'Habituation_dark_long.bed' into bed_dark_habituation, bed_dark_habituation_fraction
+    file 'Development_dark_long.bed' into bed_dark_development, bed_dark_development_fraction
 
   	"""
   	mice_stats_by_week.py -f "${file_preferences}"/intake*.csv -m ${mapping_file} -s "sum" -b feeding -p ${exp_phases} \
@@ -158,6 +160,8 @@ process behavior_by_week {
   	mv *.bed  stats_by_phase/
   	mv stats_by_phase/Development_dark_long.bed ./
   	mv stats_by_phase/Habituation_dark_long.bed ./
+  	mv stats_by_phase/Habituation.bed ./
+  	mv stats_by_phase/Development.bed ./
   	mv *.tbl  behaviors_by_week/
   	"""
 }
@@ -374,6 +378,7 @@ process gviz_visualization {
     file "*.${image_format}" into gviz
 
   	"""
+  	echo "four"
     mice_gviz_visualization.R --f_experiment_info=${exp_info} \
         --path_bed_files=bed_dir \
         --path_to_bedGraph_files=bedgr_dir \
@@ -691,7 +696,8 @@ process HMM_model_learn {
     output:
     file 'output_learn/*dense*.bed' into HMM_model_ANNOTATED_STATES
     file 'output_learn/*.*' into HMM_full_results
-    file '*.bed' into segmentation_bed
+    file '*.bed' into segmentation_bed_to_plot //, segmentation_bed_to_fraction //del
+    file '*dense.bed' into segmentation_bed_to_fraction
 
     """
     mkdir output_learn
@@ -738,7 +744,7 @@ process plot_HMM_states {
     publishDir "results/", mode: 'copy', overwrite: 'true'
 
     input:
-    file 'output_learn/*' from segmentation_bed.collect()
+    file 'output_learn/*' from segmentation_bed_to_plot.collect()
 
     output:
     file "segmentation_HMM.${image_format}" into plot_HMM_segmentation
@@ -751,3 +757,67 @@ process plot_HMM_states {
 
     """
 }
+
+segmentation_bed_to_fraction_f = segmentation_bed_to_fraction.flatten()
+
+/*
+ *
+ * primero tengo que extraer los estados correspondientes a cada uno de ellos
+ * hacerlo con un python script y filter function de pybedtools
+ * Hacer un spread con el habituation_dark, development_dark y light
+ * para compararlo todo
+ */
+
+process states_fraction {
+    publishDir "results/", mode: 'copy', overwrite: 'true'
+
+    input:
+    file (file_bed) from segmentation_bed_to_fraction_f
+    //file file_bed from segmentation_bed_to_fraction.collectFile()
+    // file dark_habituation from bed_dark_habituation_fraction
+    // file dark_development from bed_dark_development_fraction
+    //file habituation from habituation_to_fraction.first()
+    //file development from development_to_fraction.first()
+
+    file exp_phases from exp_phases_bed_to_fraction.first()
+
+    output:
+    file '*.cov' into fraction_state_by_phase
+
+    """
+    fraction_states.py -b ${file_bed} -p ${exp_phases} -n ${n_states}
+    """
+}
+
+/*
+#for file_bed in output_learn/*dense.bed
+    #do
+        # bedtools coverage -a $exp_phases -b \$file_bed > \$file_bed".cov"
+
+    #    fraction_states.py -b \${file_bed} -p ${habituation} -n ${n_states}
+    #    fraction_states.py -b \${file_bed} -p ${development} -n ${n_states}
+
+    #done
+
+
+#fraction_states.py -b ${file_bed} -p ${habituation} -n ${n_states}
+    #fraction_states.py -b ${file_bed} -p ${development} -n ${n_states}
+    */
+
+//fraction_state_by_phase.into {fraction_state_by_phase_to_print; fraction_state_by_phase}
+//fraction_state_by_phase_to_print.flatten().collect().println()
+/*
+process states_fraction_plots {
+    publishDir "results/", mode: 'copy', overwrite: 'true'
+
+    input:
+    file './*' from fraction_state_by_phase.flatten().collect()
+
+    output:
+    file '*.cov' into fraction_state_by_phase
+
+    """
+    cat *.cov > all_bed_cov.txt
+    """
+}
+*/
