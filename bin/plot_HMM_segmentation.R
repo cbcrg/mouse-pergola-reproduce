@@ -152,11 +152,11 @@ bed_tracks <- lapply(bed_files, function (bed) {
   return (tr)
 } )
 
-bed_GR <- import(bed_files[[1]], format = "bed")
+bed_GR <- import (bed_files[[1]], format = "bed")
 states_names <- unique (bed_GR$name)
-color_by_tr <- unique(bed_GR$itemRgb)
-n_states <- length(states_names)
-names(color_by_tr) <- states_names
+color_by_tr <- unique (bed_GR$itemRgb)
+n_states <- length (states_names)
+names (color_by_tr) <- states_names
 
 names(bed_tracks) <- as.numeric(gsub(".+tr_(\\d+)(_.+$)", "\\1", bed_files))
 id_mice <- sort(as.numeric(gsub(".+tr_(\\d+)(_.+$)", "\\1", bed_files)))
@@ -194,8 +194,8 @@ size_text_leg <- 18
 df_empty <- data.frame()
 
 plot_legends <- ggplot(df_empty) + geom_point() + 
-  theme(panel.border = element_blank(), 
-        panel.background = element_blank())
+                theme(panel.border = element_blank(),
+                panel.background = element_blank())
 
 size_box_leg <- 6
 # size_box_leg <- 4

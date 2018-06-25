@@ -226,6 +226,32 @@ col_back_title="brown"
   }
 }
 
+## Reorder to show plots in the same order
+path_to_files_bed <- "/Users/jespinosa/git/cbcrg/pergola-reproduce/pergola/sample_data/feeding_behavior/tr_files.bed"
+files_file <- file.path(path_to_files_bed)
+name_phases_tr <- "Files"
+phases_color <- 'Red'
+col_back_title="brown"
+
+{
+  if(file.exists(files_file)) {
+    bed_files <- import(files_file, format = "BED")
+
+    cb_palette_long <- rep(cb_palette, round(length(bed_files$itemRgb)/length(cb_palette))+1)
+
+    l_files_color <- mapply(function(x, col) list(col),
+                     c(1:length(bed_files$itemRgb)),
+                     cb_palette_long[1:length(bed_files$name)])
+
+    files_tr <- AnnotationTrack(bed_files, name = paste ("", name_phases_tr, sep=""),
+                                 fill = unlist(l_files_color),
+                                 background.title = col_back_title, col = NULL)
+  }
+  else {
+    files_tr <- NULL
+  }
+}
+
 l_granges_bg <- bed2pergViz (bg2v, exp_info, "bedGraph") 
 
 min_heatmap <- 0
@@ -332,7 +358,7 @@ plot_name <- "mice_gviz_viz"
         size_lab <- 0.5
     }
     else if (image_format == 'png') {        
-        png(paste(plot_name, ".", image_format, sep=""), width = 45 , height = 34, units = "cm", res=300)
+        png(paste(plot_name, ".", image_format, sep=""), width = 50 , height = 34, units = "cm", res=300)
         size_lab <- 0.3
     }
     else {
@@ -340,7 +366,7 @@ plot_name <- "mice_gviz_viz"
     }
 }
 
-p <- plotTracks(c(g_tr, unlist(l_gr_annotation_tr_bed), unlist(l_gr_data_tr_bg), phases_tr, unlist(ctracks)),
+p <- plotTracks(c(g_tr, unlist(l_gr_annotation_tr_bed), unlist(l_gr_data_tr_bg), phases_tr, files_tr, unlist(ctracks)),
 	       ##different windows of time selected
            # from=0, to=1814400, # 3 weeks
            # from=26953, to=1841353, # 3 weeks # Shift the first hours until 8PM, this way phases look nicer

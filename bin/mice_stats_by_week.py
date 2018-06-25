@@ -146,9 +146,6 @@ data_read_exp_phases_long = int_exp_phases_long.read(relative_coord=True)
 # generates a bed for habituation and one for development
 d_exp_phases_bed_long = data_read_exp_phases_long.convert(mode="bed", data_types_actions='one_per_channel')
 
-
-
-
 def length_bed (b):
     """
     calculates length of bed items and dumps it on the score field
@@ -158,7 +155,7 @@ def length_bed (b):
 
 def rate_bed (b):
     """
-    calculates the eating rate by divinding by score by the length of bed items and dumps it on the score field
+    calculates the eating rate by dividing by score by the length of bed items and dumps it on the score field
     """
     b.score = str(float(b.score) / (b.end - b.start))
     return b
@@ -211,7 +208,8 @@ for exp_group, dict_exp_gr in bed_dict.iteritems():
                         pybedtools.BedTool(exp_phase + ".bed")).saveas(
                         'tr_' + exp_group + '.' + '.'.join(tr) + ".day." + exp_phase + ".bed")
 
-
+## this takes care of long experimenta phases file
+## long means the whole experiment, not just 3 weeks
 for key, bed_phase in d_exp_phases_bed_long.iteritems():
     exp_phase = key[1]
 
@@ -219,5 +217,8 @@ for key, bed_phase in d_exp_phases_bed_long.iteritems():
         bed_phase.create_pybedtools().saveas(exp_phase + "_long.bed")
         # dark phases per experimental phase
     pybedtools.BedTool(exp_phase + "_long.bed").intersect(pybedtools.BedTool("phases_dark.bed")).sort().saveas(exp_phase + "_dark_long.bed")
-
+    pybedtools.BedTool(exp_phase + "_long.bed").saveas(exp_phase + ".bed")
         # data_read_exp_phases
+
+pybedtools.BedTool("exp_phases" + ".bed").intersect(pybedtools.BedTool("phases_dark.bed")).sort().saveas("whole_experiment_dark"  + ".bed")
+pybedtools.BedTool("exp_phases" + ".bed").intersect(pybedtools.BedTool("phases_light.bed")).sort().saveas("whole_experiment_light"  + ".bed")
