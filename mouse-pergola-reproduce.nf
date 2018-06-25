@@ -144,10 +144,12 @@ process behavior_by_week {
     file 'exp_phases_sushi' into exp_phases_bed_sushi, exp_phases_bed_gviz
 
 	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz, days_bed_igv, days_bed_shiny, days_bed_deepTools
-    file 'Habituation.bed' into habituation_to_fraction
+    file 'Habituation.bed' into habituation_to_fraction //del check which are I am using
     file 'Development.bed' into development_to_fraction
     file 'Habituation_dark_long.bed' into bed_dark_habituation, bed_dark_habituation_fraction
     file 'Development_dark_long.bed' into bed_dark_development, bed_dark_development_fraction
+    file 'whole_experiment_dark.bed' into whole_experiment_dark
+    file 'whole_experiment_light.bed' into whole_experiment_light
 
   	"""
   	mice_stats_by_week.py -f "${file_preferences}"/intake*.csv -m ${mapping_file} -s "sum" -b feeding -p ${exp_phases} \
@@ -162,6 +164,8 @@ process behavior_by_week {
   	mv stats_by_phase/Habituation_dark_long.bed ./
   	mv stats_by_phase/Habituation.bed ./
   	mv stats_by_phase/Development.bed ./
+  	mv stats_by_phase/whole_experiment_dark.bed ./
+  	mv stats_by_phase/whole_experiment_light.bed ./
   	mv *.tbl  behaviors_by_week/
   	"""
 }
@@ -698,7 +702,7 @@ process HMM_model_learn {
     file 'output_learn/*.*' into HMM_full_results
     file '*.bed' into segmentation_bed_to_plot //, segmentation_bed_to_fraction //del
     file '*dense.bed' into segmentation_bed_to_fraction
-
+    file 'colormappingfile' into tbl_states_color
     """
     mkdir output_learn
 
@@ -734,6 +738,8 @@ process HMM_model_learn {
 
         java -mx4000M -jar /ChromHMM/ChromHMM.jar MakeBrowserFiles -c colormappingfile \${dense_file} \${mice_id} \${filename}
     done
+
+
     """
 }
 
@@ -761,11 +767,7 @@ process plot_HMM_states {
 segmentation_bed_to_fraction_f = segmentation_bed_to_fraction.flatten()
 
 /*
- *
- * primero tengo que extraer los estados correspondientes a cada uno de ellos
- * hacerlo con un python script y filter function de pybedtools
- * Hacer un spread con el habituation_dark, development_dark y light
- * para compararlo todo
+ * Calculates which is the fraction of time expend in each of the states during the behavioral trajectory
  */
 
 process states_fraction {
@@ -780,12 +782,17 @@ process states_fraction {
     //file development from development_to_fraction.first()
 
     file exp_phases from exp_phases_bed_to_fraction.first()
+    file dark_whole_experiment from whole_experiment_dark.first()
+    file light_whole_experiment from whole_experiment_light.first()
+    //file chrom_sizes from chrom_sizes_fraction //del
 
     output:
     file '*.cov' into fraction_state_by_phase
 
     """
-    fraction_states.py -b ${file_bed} -p ${exp_phases} -n ${n_states}
+    # fraction_states.py -b ${file_bed} -p ${exp_phases} -n ${n_states} # -c ${chrom_sizes}
+    fraction_states.py -b ${file_bed} -p ${dark_whole_experiment} -n ${n_states} -t "dark" # -c ${chrom_sizes}
+    fraction_states.py -b ${file_bed} -p ${light_whole_experiment} -n ${n_states} -t "light" # -c ${chrom_sizes}
     """
 }
 
@@ -806,18 +813,23 @@ process states_fraction {
 
 //fraction_state_by_phase.into {fraction_state_by_phase_to_print; fraction_state_by_phase}
 //fraction_state_by_phase_to_print.flatten().collect().println()
-/*
+
 process states_fraction_plots {
     publishDir "results/", mode: 'copy', overwrite: 'true'
 
     input:
     file './*' from fraction_state_by_phase.flatten().collect()
+    file 'tbl_states_color' from tbl_states_color
 
     output:
-    file '*.cov' into fraction_state_by_phase
+    file "states_fraction.${image_format}" into plot_states_fraction
 
     """
     cat *.cov > all_bed_cov.txt
+    states_fraction_time_plots.R --path_to_tbl=all_bed_cov.txt \
+                                 --path_to_tbl_col=${tbl_states_color} \
+                                 --image_format=${image_format}
     """
 }
-*/
+
+
