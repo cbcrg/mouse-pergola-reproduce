@@ -33,8 +33,11 @@ params.phases         = "$baseDir/small_data/phases/exp_phases.csv"
 params.phases_long    = "$baseDir/small_data/phases/exp_phases_whole_exp.csv"
 params.mappings_phase = "$baseDir/small_data/mappings/f2g.txt"
 params.exp_info       = "$baseDir/small_data/mappings/exp_info.txt"
+params.tbl_chromHMM   = "$baseDir/small_data/chromHMM_files/cellmarkfiletable"
+params.n_bins_HMM     = 5
+params.n_states_HMM   = 4
 params.output         = "files/"
-params.image_format   = "tiff"
+params.image_format   = "png"
 
 log.info "Mouse - Pergola - Reproduce  -  version 0.2.0"
 log.info "====================================="
@@ -45,10 +48,11 @@ log.info "experimental phases      : ${params.phases}"
 log.info "experimental phases long : ${params.phases_long}"
 log.info "mappings phases          : ${params.mappings_phase}"
 log.info "experimental info        : ${params.exp_info}"
+log.info "chromHMM config table    : ${params.tbl_chromHMM}"
+log.info "HMM number of bins       : ${params.n_bins_HMM}"
+log.info "HMM number of states     : ${params.n_states_HMM}"
 log.info "output                   : ${params.output}"
 log.info "image format             : ${params.image_format}"
-log.info "chromHMM ct config table : ${params.tbl_chromHMM_ctrl}"
-log.info "chromHMM hf config table : ${params.tbl_chromHMM_hf}"
 log.info "\n"
 
 // Example command to run the script
@@ -61,9 +65,10 @@ nextflow run mouse-pergola-reproduce.nf \
   --phases_long='small_data/phases/exp_phases_whole_exp.csv' \
   --mappings_phase='small_data/mappings/f2g.txt' \
   --exp_info='small_data/mappings/exp_info.txt' \
+  --tbl_chromHMM="small_data/chromHMM_files/cellmarkfiletable" \
+  --n_bins_HMM=5 \
+  --n_states_HMM=4 \
   --image_format='png' \
-  --tbl_chromHMM_ctrl="small_data/chromHMM_files/cellmarkfiletable_ctrl" \
-  --tbl_chromHMM_hf="small_data/chromHMM_files/cellmarkfiletable_hf" \
   -with-docker
 */
 
@@ -88,20 +93,10 @@ if( !exp_phases.exists() ) exit 1, "Missing phases file: ${exp_phases}"
 if( !exp_phases_long.exists() ) exit 1, "Missing long phases file: ${exp_phases_long}"
 if( !exp_info.exists() ) exit 1, "Missing experimental info file: ${exp_info}"
 cell_mark_file_tbl = Channel.fromPath(params.tbl_chromHMM)
-//cell_mark_file_tbl_ctrl = Channel.fromPath(params.tbl_chromHMM_ctrl)
-//cell_mark_file_tbl_hf = Channel.fromPath(params.tbl_chromHMM_hf)
 
-//if( !cell_mark_file_tbl_ctrl.first().exists() ) exit 1, "Missing configuration file for chromHMM ctrl: ${cell_mark_file_tbl_ctrl}"
-//if( !cell_mark_file_tbl_hf.first().exists() ) exit 1, "Missing configuration file for chromHMM hf: ${cell_mark_file_tbl_hf}"
-
-//cell_mark_file_tbl_ctrl_labelled = cell_mark_file_tbl_ctrl.map {
-//                                        [ it, "ctrl" ]
-//                                   }
-//cell_mark_file_tbl_hf_labelled = cell_mark_file_tbl_hf.map {
-//                                        [ it, "hf" ]
-//                                   }
-
-//cell_mark_file_tbl = cell_mark_file_tbl_ctrl_labelled.mix ( cell_mark_file_tbl_hf_labelled )
+// HMM parametrization
+n_bins = params.n_bins_HMM
+n_states = params.n_states_HMM
 
 /*
  * Read image format
@@ -141,13 +136,11 @@ process behavior_by_week {
   	file 'behaviors_by_week' into d_behaviors_by_week
   	stdout into max_time
     file 'exp_phases' into exp_phases_bed_to_wr, exp_phases_bed_to_wr2, exp_phases_bed_to_fraction
-    file 'exp_phases_sushi' into exp_phases_bed_sushi, exp_phases_bed_gviz
+    //file 'exp_phases_sushi' into exp_phases_bed_sushi, exp_phases_bed_gviz //del
 
 	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz, days_bed_igv, days_bed_shiny, days_bed_deepTools
-    file 'Habituation.bed' into habituation_to_fraction //del check which are I am using
-    file 'Development.bed' into development_to_fraction
-    file 'Habituation_dark_long.bed' into bed_dark_habituation, bed_dark_habituation_fraction
-    file 'Development_dark_long.bed' into bed_dark_development, bed_dark_development_fraction
+    file 'Habituation_dark_long.bed' into bed_dark_habituation
+    file 'Development_dark_long.bed' into bed_dark_development
     file 'whole_experiment_dark.bed' into whole_experiment_dark
     file 'whole_experiment_light.bed' into whole_experiment_light
 
@@ -174,6 +167,7 @@ process behavior_by_week {
  * Creates a heatmap that compares mice feeding behavior of high-fat mice with their controls
  */
 process heatmap {
+
     publishDir "${params.output_res}/heatmap/", mode: 'copy', overwrite: 'true'
 
     input:
@@ -210,6 +204,7 @@ def igv_files_by_group ( file ) {
  * Converts input behavioral trajectory of mice into BED files (discrete intervals)
  */
 process convert_bed {
+
     publishDir params.output_res, mode: 'copy', pattern: "tr*food*.bed", saveAs: this.&igv_files_by_group
 
   	input:
@@ -219,10 +214,10 @@ process convert_bed {
 
   	output:
   	file 'tr*food*.bed' into bed_out, bed_out_shiny_p, bed_out_gviz, bed_out_sushi
-  	//file 'dir_bed_ctrl' into dir_bed_to_chromHMM_ctrl
-  	//file 'dir_bed_hf' into dir_bed_to_chromHMM_hf
+  	//file 'dir_bed_ctrl' into dir_bed_to_chromHMM_ctrl //del
+  	//file 'dir_bed_hf' into dir_bed_to_chromHMM_hf //del
   	file 'dir_bed' into dir_bed_to_bin
-  	// file 'tr*{water,sac}*.bed' into bed_out_drink
+  	// file 'tr*{water,sac}*.bed' into bed_out_drink //del
   	file 'phases_light.bed' into phases_night
   	file '*.fa' into out_fasta
 
@@ -284,17 +279,6 @@ process convert_bed {
   	"""
 }
 
-/*
-dir_bed_to_chromHMM_ctrl_labelled = dir_bed_to_chromHMM_ctrl.map {
-                                        [ it, "ctrl" ]
-                                    }
-
-dir_bed_to_chromHMM_hf_labelled = dir_bed_to_chromHMM_hf.map {
-                                    [ it, "hf" ]
-                                  }
-
-dir_bed_to_chromHMM = dir_bed_to_chromHMM_ctrl_labelled.mix ( dir_bed_to_chromHMM_hf_labelled )
-*/
 result_dir_shiny_p = file("$baseDir/files")
 
 result_dir_shiny_p.with {
@@ -338,9 +322,7 @@ process convert_bedGraph {
   	output:
   	file 'tr*food*.bedGraph' into bedGraph_out, bedGraph_out_shiny_p, bedGraph_out_gviz, bedGraph_out_sushi, bedGraph_out_bigwig
   	file 'chrom.sizes' into chrom_sizes, chrom_sizes_chromHMM_binarize, chrom_sizes_chromHMM_l
-  	//file 'tr*{water,sac}*.bedGraph' into bedGraph_out_drink
-    //stdout into len_experiment_days
-    stdout into len_experiment_weeks
+    //stdout into len_experiment_weeks //del
 
   	"""
   	pergola_rules.py -i ${batch_bg} -m ${mapping_file_bG} -max ${max} -f bedGraph -w 1800 -nt -e -dl food_sc food_fat -d all
@@ -382,7 +364,6 @@ process gviz_visualization {
     file "*.${image_format}" into gviz
 
   	"""
-  	echo "four"
     mice_gviz_visualization.R --f_experiment_info=${exp_info} \
         --path_bed_files=bed_dir \
         --path_to_bedGraph_files=bedgr_dir \
@@ -416,8 +397,6 @@ process sushi_visualization {
   	"""
 }
 
-//bedGraph_out_bigwig.flatten().println()
-
 bedGraph_out_bigwig_short_name = bedGraph_out_bigwig.flatten().map {
     def content = it
     def name = it.baseName.replaceAll('tr_','').replaceAll('_dt_food_fat_food_sc','').replaceAll('_dt_food_sc','')
@@ -429,8 +408,8 @@ bedGraph_out_bigwig_short_name = bedGraph_out_bigwig.flatten().map {
  * For each pair get the correlation using bigwig
  */
 process bedgraph_to_bigWig {
-    //container = '089a918d085e'
-    publishDir "results_new/", mode: 'copy', overwrite: 'true'
+
+    //publishDir "results_new/", mode: 'copy', overwrite: 'true'
 
   	input:
   	set file (bedgr_file), val (name) from bedGraph_out_bigwig_short_name
@@ -445,12 +424,27 @@ process bedgraph_to_bigWig {
   	"""
 }
 
+// Parametrization for fast running debugging
+before_start_length = 3000
+body_length = 5000
+after_end_length = 3000
+
+// Parametrization for production
+/*
+before_start_length = 21600
+body_length = 43200
+after_end_length = 21600
+*/
+
+/*
+ * Creates deeptools matrix that will be used to generate a heatmap of the circadian rhythm by plotHeatmap
+ */
 process deep_tools_matrix {
-    //container = '089a918d085e'
-    publishDir "results_new/", mode: 'copy', overwrite: 'true'
+
+    //publishDir "results_new/", mode: 'copy', overwrite: 'true'
 
     input:
-    //file day_phases_dir from days_bed_deepTools
+    //file day_phases_dir from days_bed_deepTools //del
     file dark_habituation from bed_dark_habituation
     file dark_development from bed_dark_development
     file bigwig_file from bigWig_matrix.toSortedList{ it.name.replace(".bw", "").toInteger() }
@@ -461,36 +455,19 @@ process deep_tools_matrix {
     """
     computeMatrix scale-regions -S ${bigwig_file} \
                                 -R  ${dark_habituation} ${dark_development} \
-                                --beforeRegionStartLength 3000 \
-                                --regionBodyLength  5000 \
-                                --afterRegionStartLength 3000 \
+                                --beforeRegionStartLength ${before_start_length} \
+                                --regionBodyLength  ${body_length} \
+                                --afterRegionStartLength ${after_end_length} \
                                 --skipZeros -out matrix.mat.gz
-
-
-
     """
 }
 
 /*
-nice plot
-computeMatrix scale-regions -S ${bigwig_file} \
-                                -R phases_dark.bed \
-                                -R  ${dark_habituation} ${dark_development} \
-                              --beforeRegionStartLength 3000 \
-                              --regionBodyLength 5000 \
-                              --afterRegionStartLength 3000 \
-                              --skipZeros -out matrix.mat.gz
-whole plot
-                              --beforeRegionStartLength 21600 \
-                              --regionBodyLength  43200 \
-                              --afterRegionStartLength 21600 \
-*/
-
-//file '*.png' into heatmap_deepTools
-
+ * Plots a heatmap comparing the circadian profile of the mice by group using deeptools
+ */
 process deep_tools_heatmap {
-    //container = '089a918d085e'
-    publishDir "results_new/", mode: 'copy', overwrite: 'true'
+
+    publishDir "${params.output_res}/heatmap_deeptools/", mode: 'copy', overwrite: 'true'
 
     input:
     file matrix from matrix_heatmap
@@ -509,14 +486,15 @@ process deep_tools_heatmap {
                 --plotFileFormat ${image_format} #\
                 #--sortRegions no
                 # --kmeans 2
-
-
     """
 }
 
+/*
+ * Creates the circadian profile of the mice by group using deeptools
+ */
 process deep_tools_profile {
-    //container = '089a918d085e'
-    publishDir "results_new/", mode: 'copy', overwrite: 'true'
+
+    publishDir "${params.output_res}/profile_deeptools/", mode: 'copy', overwrite: 'true'
 
     input:
     file matrix from matrix_profile
@@ -529,93 +507,15 @@ process deep_tools_profile {
                 -out profile".${image_format}" \
                 --plotFileFormat ${image_format} \
                 --plotTitle "Test data profile"
-
-
     """
 }
-
-/*
-process deep_tools_bigWigSummary {
-    //container = '089a918d085e'
-    publishDir "results_new/", mode: 'copy', overwrite: 'true'
-
-    input:
-    file bigwig_file from bigWig_multiBigwigSummary.toSortedList{ it.name.replace(".bw", "").toInteger() }
-
-    output:
-    file 'results.npz' into multiBigwigSummary
-    file "PCA.${image_format}" into pca_fig
-
-    """
-    multiBigwigSummary bins -b ${bigwig_file} \
-                            -o results.npz #\
-                            #-bs 1800 #\
-                            #--smartLabels # label is file without extension
-
-    plotPCA -in results.npz \
-            -o PCA".${image_format}" \
-            -T "PCA" \
-            --plotFileFormat ${image_format} #\
-            #--colors #999999 #e69f00 #999999 #e69f00 #999999 #999999 #e69f00 #999999 #e69f00 #999999 #e69f00 #999999 #e69f00 #999999 #e69f00 #999999 #e69f00
-    """
-}
-*/
-
-/*
-process deep_tools_pca {
-    //container = '089a918d085e'
-    publishDir "results_new/", mode: 'copy', overwrite: 'true'
-
-    input:
-    file bigwig_file from bigWig_multiBigwigSummary.toSortedList{ it.name.replace(".bw", "").toInteger() }
-
-    output:
-    file 'results.npz' into multiBigwigSummary
-
-    """
-    multiBigwigSummary -b $bigwig_file -o results.npz
-
-
-    """
-}
-*/
-
-//step = 3600 * 24
-step = 604800
-window = 604800
-//len_days = len_experiment_days.getVal().toInteger()
-len_weeks = len_experiment_weeks.getVal().toInteger()
-start_end_win = Channel
-                    .from( 0..len_weeks )
-                    //.from( 0..len_days )
-                    .map { [ it, 1 + (it * step),  + window + (it * step) ] }
-
-//start_end_win.println()
-
-// para ordenar actograms
-/*
-Channel
-    .from( 1, 2, 3, 4, 5 )
-    .filter { it % 2 == 1 }
-*/
-
-
-//bins="30 120"
-bins="30"
-bins_tbl = bins
-
-//dir_bed_to_chromHMM_win = dir_bed_to_chromHMM.spread (start_end_win)
-//dir_bed_to_chromHMM_win.into { culo; dir_bed_to_chromHMM_win } //del
-//culo.println() //del
 
 /*
  * Binning of meals based on meal duration, creates table files for chromHMM binarization and plots the distribution
  */
-n_bins = 5
-
 process bin {
 
-    publishDir "results/", mode: 'copy', overwrite: 'true'
+    //publishDir "results/", mode: 'copy', overwrite: 'true'
 
     input:
     file (dir_bed_feeding) from dir_bed_to_bin
@@ -633,7 +533,6 @@ process bin {
 
     for file_bed in ${dir_bed_feeding}/*.bed
     do
-        # bin_length_by_sliding_win.py -b \${file_bed} -ct 1 604800 -bins "\$(< bins.txt)"
         bin_length_by_sliding_win.py -b \${file_bed} -bins "\$(< bins.txt)"
     done
 
@@ -662,10 +561,11 @@ process bin {
 }
 
 /*
- * chromHMM binarizes feeding bed files
+ * Binarizes feeding bed files (inputs 0 or 1 for each of the bins) using chromHMM
  */
 process binarize {
-    publishDir "results/", mode: 'copy', overwrite: 'true'
+
+    //publishDir "results/", mode: 'copy', overwrite: 'true'
 
     input:
     file chrom_sizes from chrom_sizes_chromHMM_binarize
@@ -678,17 +578,17 @@ process binarize {
     """
     mkdir output_dir
 
-    java -mx4000M -jar /ChromHMM/ChromHMM.jar BinarizeBed -b 300 -peaks ${chrom_sizes} ${dir_bed_binned} ${cellmarkfiletable_binned} output_dir
+    java -mx4000M -jar /ChromHMM/ChromHMM.jar BinarizeBed -b 300 \
+                                                          -peaks ${chrom_sizes} \
+                                                          ${dir_bed_binned} \
+                                                          ${cellmarkfiletable_binned} \
+                                                          output_dir
     """
 }
 
 /*
- * chromHMM learn model
- * In this case we use to learn the model all the data
+ * Learns the HMM model using chromHMM using the whole behavioral trajectory
  */
-
-n_states = 4
-
 process HMM_model_learn {
 
     publishDir "${params.output_res}/chromHMM", mode: 'copy', overwrite: 'true'
@@ -703,6 +603,7 @@ process HMM_model_learn {
     file '*.bed' into segmentation_bed_to_plot //, segmentation_bed_to_fraction //del
     file '*dense.bed' into segmentation_bed_to_fraction
     file 'colormappingfile' into tbl_states_color
+
     """
     mkdir output_learn
 
@@ -736,10 +637,11 @@ process HMM_model_learn {
         filename="\${filename%.*}"
         mice_id=\$(echo \$filename | cut -f2 -d_)
 
-        java -mx4000M -jar /ChromHMM/ChromHMM.jar MakeBrowserFiles -c colormappingfile \${dense_file} \${mice_id} \${filename}
+        java -mx4000M -jar /ChromHMM/ChromHMM.jar MakeBrowserFiles -c colormappingfile \
+                                                                   \${dense_file} \
+                                                                   \${mice_id} \
+                                                                   \${filename}
     done
-
-
     """
 }
 
@@ -747,7 +649,8 @@ process HMM_model_learn {
  * Uses gviz to plot the segmentation obtained with chromHMM
  */
 process plot_HMM_states {
-    publishDir "results/", mode: 'copy', overwrite: 'true'
+
+    publishDir "${params.output_res}/chromHMM/", mode: 'copy', overwrite: 'true'
 
     input:
     file 'output_learn/*' from segmentation_bed_to_plot.collect()
@@ -760,62 +663,41 @@ process plot_HMM_states {
                             --ini_time=0 \
                             --image_format=${image_format}
                             # --end_time=1814400 \
-
     """
 }
 
-segmentation_bed_to_fraction_f = segmentation_bed_to_fraction.flatten()
+//segmentation_bed_to_fraction_f = segmentation_bed_to_fraction.flatten() //del
 
 /*
  * Calculates which is the fraction of time expend in each of the states during the behavioral trajectory
  */
-
 process states_fraction {
-    publishDir "results/", mode: 'copy', overwrite: 'true'
+
+    //publishDir "results/", mode: 'copy', overwrite: 'true'
 
     input:
-    file (file_bed) from segmentation_bed_to_fraction_f
-    //file file_bed from segmentation_bed_to_fraction.collectFile()
-    // file dark_habituation from bed_dark_habituation_fraction
-    // file dark_development from bed_dark_development_fraction
-    //file habituation from habituation_to_fraction.first()
-    //file development from development_to_fraction.first()
+    file (file_bed) from segmentation_bed_to_fraction.flatten()
 
     file exp_phases from exp_phases_bed_to_fraction.first()
     file dark_whole_experiment from whole_experiment_dark.first()
     file light_whole_experiment from whole_experiment_light.first()
-    //file chrom_sizes from chrom_sizes_fraction //del
 
     output:
     file '*.cov' into fraction_state_by_phase
 
     """
-    # fraction_states.py -b ${file_bed} -p ${exp_phases} -n ${n_states} # -c ${chrom_sizes}
     fraction_states.py -b ${file_bed} -p ${dark_whole_experiment} -n ${n_states} -t "dark" # -c ${chrom_sizes}
     fraction_states.py -b ${file_bed} -p ${light_whole_experiment} -n ${n_states} -t "light" # -c ${chrom_sizes}
     """
 }
 
+
 /*
-#for file_bed in output_learn/*dense.bed
-    #do
-        # bedtools coverage -a $exp_phases -b \$file_bed > \$file_bed".cov"
-
-    #    fraction_states.py -b \${file_bed} -p ${habituation} -n ${n_states}
-    #    fraction_states.py -b \${file_bed} -p ${development} -n ${n_states}
-
-    #done
-
-
-#fraction_states.py -b ${file_bed} -p ${habituation} -n ${n_states}
-    #fraction_states.py -b ${file_bed} -p ${development} -n ${n_states}
-    */
-
-//fraction_state_by_phase.into {fraction_state_by_phase_to_print; fraction_state_by_phase}
-//fraction_state_by_phase_to_print.flatten().collect().println()
-
+ * Compares the time expend in each state during habituation vs development in a plot
+ */
 process states_fraction_plots {
-    publishDir "results/", mode: 'copy', overwrite: 'true'
+
+    publishDir "${params.output_res}/chromHMM/", mode: 'copy', overwrite: 'true'
 
     input:
     file './*' from fraction_state_by_phase.flatten().collect()
@@ -831,5 +713,3 @@ process states_fraction_plots {
                                  --image_format=${image_format}
     """
 }
-
-
