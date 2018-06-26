@@ -591,7 +591,7 @@ process binarize {
  */
 process HMM_model_learn {
 
-    publishDir "${params.output_res}/chromHMM", mode: 'copy', overwrite: 'true'
+    publishDir "${params.output_res}/chromHMM", mode: 'copy', pattern: "!(*.bed)", overwrite: 'true'
 
     input:
     file chrom_sizes from chrom_sizes_chromHMM_l
