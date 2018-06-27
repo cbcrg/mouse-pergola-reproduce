@@ -114,16 +114,16 @@ names (argsL) <- argsDF$V1
   }
 }
 
-# df_fraction_t_by_phase <- read.csv("/Users/jespinosa/scratch/12/277caddf7d868263c5b805ca9bf3f4/all_bed_cov.txt", header=F, sep="\t")
 df_fraction_t_by_phase <- read.csv (path_to_tbl, header=F, sep="\t")
-
-# color_state <- read.csv("/Users/jespinosa/scratch/d6/5c30370fa4c883ef7bde40327ba1f8/colormappingfile", header=F, sep="\t")
-color_state <- read.csv(path_to_tbl_col, header=F, sep="\t")
 colnames(df_fraction_t_by_phase) <- c("state_n", "start", "end", "phase", "group", "mouse_id", 
                                       "start2", "end2", "color","counts", "fraction", "total", 
                                       "percentage", "day_phase")
-color_by_tr <- unique (df_fraction_t_by_phase$color)
-df_fraction_t_by_phase
+
+color_state <- read.csv(path_to_tbl_col, header=F, sep="\t")
+colnames(color_state) <- c("state_n", "color")
+
+color_state$color_code <- unlist(lapply(as.vector(color_state$color), function (x) sapply(strsplit(x, ","), function(y)
+  rgb(y[1], y[2], y[3], maxColorValue=255))))
 
 summary_fract <- ddply(df_fraction_t_by_phase, .(state_n, group, phase, day_phase), summarise, mean=mean(percentage))
 summary_fract <- reshape(summary_fract, idvar=c("state_n", "group",  "day_phase"), timevar="phase", direction="wide")
@@ -140,7 +140,8 @@ hf_df_dark$cum_sum <- cumsum(hf_df_dark$Habituation)
 
 spie.data <- rbind (ctrl_df_light, ctrl_df_dark, hf_df_light, hf_df_dark)
 spie.data$state_n <- as.character(spie.data$state_n)
-levels(spie.data$day_phase) <- c("Light", "Dark")
+levels(spie.data$day_phase) <- c("Dark phase", "Light phase")
+spie.data$day_phase <- factor(spie.data$day_phase, levels = c("Light phase", "Dark phase"))
 
 bars <-ggplot(spie.data, aes(x = cum_sum - 0.5 * Habituation, fill = state_n), labels=state_n) +
   geom_bar(aes(width = Habituation, y = 1),
@@ -149,7 +150,7 @@ bars <-ggplot(spie.data, aes(x = cum_sum - 0.5 * Habituation, fill = state_n), l
            color = "grey10", size = 0.1, stat = "identity") +
   annotate("segment", linetype = 3, size = 0.5, lineend = "round",
            x = -Inf, xend = Inf, y = 1.0, yend = 1.0) +
-  scale_fill_manual(values = color_state$V2,
+  scale_fill_manual(values = color_state$color_code,
                     labels=c("Long meals", "Regular meals (2/3 min)", "Inactive", "Short meals")) +
   scale_y_sqrt(limits = c(0, 8)) +
   # scale_x_discrete (labels = state_n,
@@ -168,8 +169,8 @@ spie <- bars + coord_polar (theta = "x") + #scale_y_log10()+
         fill = "State") + 
   theme_bw() +
   # theme (axis.text.x = element_text(angle = 0, size = 8)) +
-  theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank(),
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
         plot.title = element_text(hjust = 0.5),
         strip.background = element_blank(),
         strip.text.x = element_text(size=size_strips, face="bold"), 
