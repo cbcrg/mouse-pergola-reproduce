@@ -103,6 +103,14 @@ n_states = params.n_states_HMM
  */
 image_format = "${params.image_format}"
 
+if( image_format.matches('tiff') ) {
+    println "WARNING: Deeptools figures will be created in png format as tiff format is not available.\n"
+    image_format_deeptools = 'png'
+}
+else {
+    image_format_deeptools = image_format
+}
+
 /*
  * Create a channel for mice recordings
  */
@@ -136,7 +144,6 @@ process behavior_by_week {
   	file 'behaviors_by_week' into d_behaviors_by_week
   	stdout into max_time
     file 'exp_phases' into exp_phases_bed_to_wr, exp_phases_bed_to_wr2, exp_phases_bed_to_fraction
-    //file 'exp_phases_sushi' into exp_phases_bed_sushi, exp_phases_bed_gviz //del
 
 	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz, days_bed_igv, days_bed_shiny, days_bed_deepTools
     file 'Habituation_dark_long.bed' into bed_dark_habituation
@@ -214,10 +221,7 @@ process convert_bed {
 
   	output:
   	file 'tr*food*.bed' into bed_out, bed_out_shiny_p, bed_out_gviz, bed_out_sushi
-  	//file 'dir_bed_ctrl' into dir_bed_to_chromHMM_ctrl //del
-  	//file 'dir_bed_hf' into dir_bed_to_chromHMM_hf //del
   	file 'dir_bed' into dir_bed_to_bin
-  	// file 'tr*{water,sac}*.bed' into bed_out_drink //del
   	file 'phases_light.bed' into phases_night
   	file '*.fa' into out_fasta
 
@@ -322,7 +326,6 @@ process convert_bedGraph {
   	output:
   	file 'tr*food*.bedGraph' into bedGraph_out, bedGraph_out_shiny_p, bedGraph_out_gviz, bedGraph_out_sushi, bedGraph_out_bigwig
   	file 'chrom.sizes' into chrom_sizes, chrom_sizes_chromHMM_binarize, chrom_sizes_chromHMM_l
-    //stdout into len_experiment_weeks //del
 
   	"""
   	pergola_rules.py -i ${batch_bg} -m ${mapping_file_bG} -max ${max} -f bedGraph -w 1800 -nt -e -dl food_sc food_fat -d all
@@ -409,8 +412,6 @@ bedGraph_out_bigwig_short_name = bedGraph_out_bigwig.flatten().map {
  */
 process bedgraph_to_bigWig {
 
-    //publishDir "results_new/", mode: 'copy', overwrite: 'true'
-
   	input:
   	set file (bedgr_file), val (name) from bedGraph_out_bigwig_short_name
     file chrom_sizes from chrom_sizes.first()
@@ -424,37 +425,42 @@ process bedgraph_to_bigWig {
   	"""
 }
 
-// Parametrization for fast running debugging
+// Parametrization for fast running, debugging
+/*
 before_start_length = 3000
 body_length = 5000
 after_end_length = 3000
-
+*/
 // Parametrization for production
-/*
 before_start_length = 21600
 body_length = 43200
 after_end_length = 21600
-*/
+
+// Order bigwig by group to show all mice of the same group together in the heatmap
+bigWig_matrix.into { bigWig_matrix_c; bigWig_matrix_h }
+bigWig_matrix_ctrl = bigWig_matrix_c
+                        .filter( ~/.*[1,3,5,7].bw$/ )
+
+bigWig_matrix_hf = bigWig_matrix_h
+                        .filter( ~/.*[2,4,6,8,0].bw$/ )
 
 /*
  * Creates deeptools matrix that will be used to generate a heatmap of the circadian rhythm by plotHeatmap
  */
 process deep_tools_matrix {
 
-    //publishDir "results_new/", mode: 'copy', overwrite: 'true'
-
     input:
-    //file day_phases_dir from days_bed_deepTools //del
     file dark_habituation from bed_dark_habituation
     file dark_development from bed_dark_development
-    file bigwig_file from bigWig_matrix.toSortedList{ it.name.replace(".bw", "").toInteger() }
+    file bigwig_file_ctrl from bigWig_matrix_ctrl.toSortedList{ it.name.replace(".bw", "").toInteger() }
+    file bigwig_file_hf from bigWig_matrix_hf.toSortedList{ it.name.replace(".bw", "").toInteger() }
 
     output:
     file 'matrix.mat.gz' into matrix_heatmap, matrix_profile
 
     """
-    computeMatrix scale-regions -S ${bigwig_file} \
-                                -R  ${dark_habituation} ${dark_development} \
+    computeMatrix scale-regions -S ${bigwig_file_ctrl} ${bigwig_file_hf}\
+                                -R ${dark_habituation} ${dark_development} \
                                 --beforeRegionStartLength ${before_start_length} \
                                 --regionBodyLength  ${body_length} \
                                 --afterRegionStartLength ${after_end_length} \
@@ -467,25 +473,25 @@ process deep_tools_matrix {
  */
 process deep_tools_heatmap {
 
-    publishDir "${params.output_res}/heatmap_deeptools/", mode: 'copy', overwrite: 'true'
+    publishDir "${params.output_res}/deeptools/", mode: 'copy', overwrite: 'true'
 
     input:
     file matrix from matrix_heatmap
 
     output:
-    file "*.${image_format}" into heatmap_fig
+    file "*.${image_format_deeptools}" into heatmap_fig
 
     """
     plotHeatmap -m ${matrix} \
-                -out heatmap_actogram_like".${image_format}" \
+                -out heatmap_actogram_like".${image_format_deeptools}" \
                 -z Habituation Development \
                 -T "Feeding behavior over 24 hours" \
                 --startLabel APS \
                 --endLabel RPS \
                 --xAxisLabel "Time (s)" \
-                --plotFileFormat ${image_format} #\
-                #--sortRegions no
-                # --kmeans 2
+                --yAxisLabel "Food intake (g)" \
+                --sortRegions no \
+                --plotFileFormat ${image_format_deeptools}
     """
 }
 
@@ -494,19 +500,24 @@ process deep_tools_heatmap {
  */
 process deep_tools_profile {
 
-    publishDir "${params.output_res}/profile_deeptools/", mode: 'copy', overwrite: 'true'
+    publishDir "${params.output_res}/deeptools/", mode: 'copy', overwrite: 'true'
 
     input:
     file matrix from matrix_profile
 
     output:
-    file "*.${image_format}" into profile_fig
+    file "*.${image_format_deeptools}" into profile_fig
 
     """
     plotProfile -m ${matrix} \
-                -out profile".${image_format}" \
-                --plotFileFormat ${image_format} \
-                --plotTitle "Test data profile"
+                -out profile".${image_format_deeptools}" \
+                --startLabel APS \
+                --endLabel RPS \
+                --yAxisLabel "Food intake (g)" \
+                --plotTitle "Feeding behavior over 24 hours" \
+                --regionsLabel Habituation Development \
+                --plotFileFormat ${image_format_deeptools}
+                #--xAxisLabel "Time (s)" \
     """
 }
 
@@ -515,7 +526,7 @@ process deep_tools_profile {
  */
 process bin {
 
-    //publishDir "results/", mode: 'copy', overwrite: 'true'
+    publishDir "${params.output_res}/chromHMM", mode: 'copy', pattern: "*.${image_format}", overwrite: 'true'
 
     input:
     file (dir_bed_feeding) from dir_bed_to_bin
@@ -565,8 +576,6 @@ process bin {
  */
 process binarize {
 
-    //publishDir "results/", mode: 'copy', overwrite: 'true'
-
     input:
     file chrom_sizes from chrom_sizes_chromHMM_binarize
     file dir_bed_binned from dir_bed_binned
@@ -600,7 +609,7 @@ process HMM_model_learn {
     output:
     file 'output_learn/*dense*.bed' into HMM_model_ANNOTATED_STATES
     file 'output_learn/*.*' into HMM_full_results
-    file '*.bed' into segmentation_bed_to_plot //, segmentation_bed_to_fraction //del
+    file '*.bed' into segmentation_bed_to_plot
     file '*dense.bed' into segmentation_bed_to_fraction
     file 'colormappingfile' into tbl_states_color
 
@@ -614,15 +623,14 @@ process HMM_model_learn {
     ## yellow 3 snacking
     ## echo -e "3\t255,255,0" >> colormappingfile
 
+    ## Using color blind palette
     # blue 1 active
     echo -e "1\t0,114,178" > colormappingfile
     # yellow 2 snacking
     echo -e "2\t240,228,66" >> colormappingfile
-    # black 2 snacking
-    # echo -e "2\t0,0,0" >> colormappingfile
-    # red 3 resting
+    # vermilion 3 resting
     echo -e "3\t213,94,0" >> colormappingfile
-    # green 4
+    # bluish green 4
     echo -e "4\t0,158,115" >> colormappingfile
 
     # java -mx4000M -jar /ChromHMM/ChromHMM.jar LearnModel -b 300 -l  ${chrom_sizes}  -printstatebyline test_feeding/output/outputdir test_feeding/output/outputdir_learn ${n_states} test_feeding/input/chrom.sizes
@@ -666,14 +674,10 @@ process plot_HMM_states {
     """
 }
 
-//segmentation_bed_to_fraction_f = segmentation_bed_to_fraction.flatten() //del
-
 /*
  * Calculates which is the fraction of time expend in each of the states during the behavioral trajectory
  */
 process states_fraction {
-
-    //publishDir "results/", mode: 'copy', overwrite: 'true'
 
     input:
     file (file_bed) from segmentation_bed_to_fraction.flatten()
