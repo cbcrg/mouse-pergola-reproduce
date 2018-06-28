@@ -227,7 +227,7 @@ col_back_title="brown"
 }
 
 ## Reorder to show plots in the same order
-path_to_files_bed <- "/Users/jespinosa/git/cbcrg/pergola-reproduce/pergola/sample_data/feeding_behavior/tr_files.bed"
+path_to_files_bed <- ""
 files_file <- file.path(path_to_files_bed)
 name_phases_tr <- "Files"
 phases_color <- 'Red'
