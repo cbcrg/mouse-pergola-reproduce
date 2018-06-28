@@ -30,7 +30,6 @@ params.recordings     = "$baseDir/small_data/mouse_recordings/"
 params.mappings       = "$baseDir/small_data/mappings/b2p.txt"
 params.mappings_bed   = "$baseDir/small_data/mappings/bed2pergola.txt"
 params.phases         = "$baseDir/small_data/phases/exp_phases.csv"
-params.phases_long    = "$baseDir/small_data/phases/exp_phases_whole_exp.csv"
 params.mappings_phase = "$baseDir/small_data/mappings/f2g.txt"
 params.exp_info       = "$baseDir/small_data/mappings/exp_info.txt"
 params.tbl_chromHMM   = "$baseDir/small_data/chromHMM_files/cellmarkfiletable"
@@ -45,7 +44,6 @@ log.info "mice recordings          : ${params.recordings}"
 log.info "mappings                 : ${params.mappings}"
 log.info "mappings bed             : ${params.mappings_bed}"
 log.info "experimental phases      : ${params.phases}"
-log.info "experimental phases long : ${params.phases_long}"
 log.info "mappings phases          : ${params.mappings_phase}"
 log.info "experimental info        : ${params.exp_info}"
 log.info "chromHMM config table    : ${params.tbl_chromHMM}"
@@ -62,7 +60,6 @@ nextflow run mouse-pergola-reproduce.nf \
   --mappings='small_data/mappings/b2p.txt' \
   --mappings_bed='small_data/mappings/bed2pergola.txt' \
   --phases='small_data/phases/exp_phases.csv' \
-  --phases_long='small_data/phases/exp_phases_whole_exp.csv' \
   --mappings_phase='small_data/mappings/f2g.txt' \
   --exp_info='small_data/mappings/exp_info.txt' \
   --tbl_chromHMM="small_data/chromHMM_files/cellmarkfiletable" \
@@ -81,7 +78,6 @@ mapping_file_bG = file(params.mappings)
 mapping_file_phase = file(params.mappings_phase)
 
 exp_phases = file(params.phases)
-exp_phases_long = file(params.phases_long)
 exp_info = file(params.exp_info)
 
 /*
@@ -90,7 +86,6 @@ exp_info = file(params.exp_info)
 if( !mapping_file.exists() ) exit 1, "Missing mapping file: ${mapping_file}"
 if( !mapping_file_phase.exists() ) exit 1, "Missing mapping phases file: ${mapping_file_phase}"
 if( !exp_phases.exists() ) exit 1, "Missing phases file: ${exp_phases}"
-if( !exp_phases_long.exists() ) exit 1, "Missing long phases file: ${exp_phases_long}"
 if( !exp_info.exists() ) exit 1, "Missing experimental info file: ${exp_info}"
 cell_mark_file_tbl = Channel.fromPath(params.tbl_chromHMM)
 
@@ -138,7 +133,6 @@ process behavior_by_week {
   	file mapping_file
     file mapping_file_phase
     file exp_phases
-    file exp_phases_long
 
   	output:
   	file 'behaviors_by_week' into d_behaviors_by_week
@@ -146,24 +140,22 @@ process behavior_by_week {
     file 'exp_phases' into exp_phases_bed_to_wr, exp_phases_bed_to_wr2, exp_phases_bed_to_fraction
 
 	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz, days_bed_igv, days_bed_shiny, days_bed_deepTools
-    file 'Habituation_dark_long.bed' into bed_dark_habituation
-    file 'Development_dark_long.bed' into bed_dark_development
+    file 'Habituation_dark.bed' into bed_dark_habituation
+    file 'Development_dark.bed' into bed_dark_development
     file 'whole_experiment_dark.bed' into whole_experiment_dark
     file 'whole_experiment_light.bed' into whole_experiment_light
 
   	"""
   	mice_stats_by_week.py -f "${file_preferences}"/intake*.csv -m ${mapping_file} -s "sum" -b feeding -p ${exp_phases} \
-  	                      -pl ${exp_phases_long} -mp ${mapping_file_phase}
+  	                      -mp ${mapping_file_phase}
 
   	mkdir stats_by_phase
   	mkdir behaviors_by_week
   	cp exp_phases.bed exp_phases
   	tail +2 exp_phases > exp_phases_sushi
   	mv *.bed  stats_by_phase/
-  	mv stats_by_phase/Development_dark_long.bed ./
-  	mv stats_by_phase/Habituation_dark_long.bed ./
-  	mv stats_by_phase/Habituation.bed ./
-  	mv stats_by_phase/Development.bed ./
+  	mv stats_by_phase/Development_dark.bed ./
+  	mv stats_by_phase/Habituation_dark.bed ./
   	mv stats_by_phase/whole_experiment_dark.bed ./
   	mv stats_by_phase/whole_experiment_light.bed ./
   	mv *.tbl  behaviors_by_week/
@@ -439,7 +431,7 @@ after_end_length = 21600
 // Order bigwig by group to show all mice of the same group together in the heatmap
 bigWig_matrix.into { bigWig_matrix_c; bigWig_matrix_h }
 bigWig_matrix_ctrl = bigWig_matrix_c
-                        .filter( ~/.*[1,3,5,7].bw$/ )
+                        .filter( ~/.*[1,3,5,7,9].bw$/ )
 
 bigWig_matrix_hf = bigWig_matrix_h
                         .filter( ~/.*[2,4,6,8,0].bw$/ )

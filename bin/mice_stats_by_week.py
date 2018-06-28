@@ -28,11 +28,9 @@
 ### the above described operations.                          ###
 ################################################################
 
-from argparse import ArgumentParser, FileType
-from os import path, getcwd, makedirs, chdir
-from shutil import rmtree
+from argparse import ArgumentParser
+from os import path
 from sys import stderr, stdout
-import subprocess
 import pybedtools
 from pergola import mapping
 from pergola import intervals
@@ -46,7 +44,6 @@ parser.add_argument('-f', '--file_mice_behavior', help='Files containing feeding
                     required=True, nargs='+')
 parser.add_argument('-m', '--mapping_file', help='Mapping file to read mice behavioral files', required=True)
 parser.add_argument('-p', '--phases_exp_file', help='Experiment phases file', required=True)
-parser.add_argument('-pl', '--phases_exp_file_long', help='Experiment phases file whole trajectory', required=False)
 parser.add_argument('-mp', '--mapping_phases', help='Mapping file of experiment phases file', required=True)
 parser.add_argument('-s', '--statistic', help='Choose one of the possible statistical available on Bedtools map option',
                     required=True, choices=_stats_available)
@@ -139,12 +136,9 @@ int_exp_phases = intervals.IntData(args.phases_exp_file, map_dict=mapping_data_p
 data_read_exp_phases = int_exp_phases.read(relative_coord=True)
 d_exp_phases_bed2file = data_read_exp_phases.convert(mode="bed", data_types_actions="all")
 d_exp_phases_bed2file[d_exp_phases_bed2file.keys()[0]].save_track(bed_label="True", name_file="exp_phases")
-d_exp_phases_bed = data_read_exp_phases.convert(mode="bed", data_types_actions='one_per_channel')
 
-int_exp_phases_long = intervals.IntData(args.phases_exp_file_long, map_dict=mapping_data_phases.correspondence)
-data_read_exp_phases_long = int_exp_phases_long.read(relative_coord=True)
 # generates a bed for habituation and one for development
-d_exp_phases_bed_long = data_read_exp_phases_long.convert(mode="bed", data_types_actions='one_per_channel')
+d_exp_phases_bed = data_read_exp_phases.convert(mode="bed", data_types_actions='one_per_channel')
 
 def length_bed (b):
     """
@@ -207,18 +201,6 @@ for exp_group, dict_exp_gr in bed_dict.iteritems():
                     days_bed.map(exp_phase_events_bed, c=5, o=statistic, null=0).intersect(
                         pybedtools.BedTool(exp_phase + ".bed")).saveas(
                         'tr_' + exp_group + '.' + '.'.join(tr) + ".day." + exp_phase + ".bed")
-
-## this takes care of long experimenta phases file
-## long means the whole experiment, not just 3 weeks
-for key, bed_phase in d_exp_phases_bed_long.iteritems():
-    exp_phase = key[1]
-
-    if not path.isfile(exp_phase + "_long.bed"):
-        bed_phase.create_pybedtools().saveas(exp_phase + "_long.bed")
-        # dark phases per experimental phase
-    pybedtools.BedTool(exp_phase + "_long.bed").intersect(pybedtools.BedTool("phases_dark.bed")).sort().saveas(exp_phase + "_dark_long.bed")
-    pybedtools.BedTool(exp_phase + "_long.bed").saveas(exp_phase + ".bed")
-        # data_read_exp_phases
 
 pybedtools.BedTool("exp_phases" + ".bed").intersect(pybedtools.BedTool("phases_dark.bed")).sort().saveas("whole_experiment_dark"  + ".bed")
 pybedtools.BedTool("exp_phases" + ".bed").intersect(pybedtools.BedTool("phases_light.bed")).sort().saveas("whole_experiment_light"  + ".bed")

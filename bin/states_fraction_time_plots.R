@@ -30,11 +30,8 @@ home <- Sys.getenv("HOME")
 ### Execution example
 ## Rscript plot_HMM_segmentation.R --path_bed_files="path_to_bed_files"
 library("ggplot2")
-library ("plyr") # ddply
-library ("dplyr") # ddply
-# library("reshape2")
-# library ("gtools")
-# library("tidyr")
+library ("plyr")
+library ("dplyr")
 
 # Loading params plot:
 source("https://raw.githubusercontent.com/cbcrg/mwm/master/lib/R/plot_param_public.R")
@@ -152,13 +149,13 @@ bars <-ggplot(spie.data, aes(x = cum_sum - 0.5 * Habituation, fill = state_n), l
            x = -Inf, xend = Inf, y = 1.0, yend = 1.0) +
   scale_fill_manual(values = color_state$color_code,
                     labels=c("Long meals", "Regular meals (2/3 min)", "Inactive", "Short meals")) +
-  scale_y_sqrt(limits = c(0, 8)) +
+  scale_y_sqrt(limits = c(0, 9.5), breaks=seq(0, 10, 2)) +
   # scale_x_discrete (labels = state_n,
                       # scale_x_continuous (labels = "",
                       # breaks = cum_sum) +
   # geom_text(data=spie.data, aes(label=p_value, y = Development / Habituation), vjust=-0.25) +
   facet_grid(group~day_phase)
-# print(bars)
+print(bars)
 
 size_strips <- 12
 
