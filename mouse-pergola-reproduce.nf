@@ -140,8 +140,8 @@ process behavior_by_week {
     file 'exp_phases' into exp_phases_bed_to_wr, exp_phases_bed_to_wr2, exp_phases_bed_to_fraction
 
 	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz, days_bed_igv, days_bed_shiny, days_bed_deepTools
-    file 'Habituation_dark.bed' into bed_dark_habituation
-    file 'Development_dark.bed' into bed_dark_development
+    file 'Habituation_dark.bed' into bed_dark_habituation, bed_dark_habituation_groups
+    file 'Development_dark.bed' into bed_dark_development, bed_dark_development_groups
     file 'whole_experiment_dark.bed' into whole_experiment_dark
     file 'whole_experiment_light.bed' into whole_experiment_light
 
@@ -163,7 +163,7 @@ process behavior_by_week {
 }
 
 /*
- * Creates a heatmap that compares mice feeding behavior of high-fat mice with their controls
+ * Creates a heatmap that compares mice feeding behavior of high-fat mice against their controls
  */
 process heatmap {
 
@@ -311,16 +311,28 @@ process convert_bedGraph {
     publishDir params.output_res, mode: 'copy', pattern: "tr*food*.bedGraph", saveAs: this.&igv_files_by_group
 
   	input:
-  	file ('batch_bg') from mice_files_bedGraph
+    file ('batch_bg') from mice_files_bedGraph
   	file mapping_file_bG
   	val max from max_time.first()
 
   	output:
-  	file 'tr*food*.bedGraph' into bedGraph_out, bedGraph_out_shiny_p, bedGraph_out_gviz, bedGraph_out_sushi, bedGraph_out_bigwig
-  	file 'chrom.sizes' into chrom_sizes, chrom_sizes_chromHMM_binarize, chrom_sizes_chromHMM_l
+  	file '{tr_[1-9]_dt_*food*.bedGraph,tr_[1-9][0-9]_dt_*food*.bedGraph}' into bedGraph_out, bedGraph_out_shiny_p, bedGraph_out_gviz, bedGraph_out_sushi, bedGraph_out_bigwig
+  	file '{tr_[1][1,3,5,7]_dt_*food*.bedGraph,tr_[1,3,5,7,9]_dt_*food*.bedGraph}' into bedGraph_out_bigwig_ctrl
+  	file '{tr_[1][0,2,4,6,8]_dt_*food*.bedGraph,tr_[2,4,8]_dt_*food*.bedGraph}' into bedGraph_out_bigwig_hf
+  	file 'chrom.sizes' into chrom_sizes,chrom_sizes_ctrl,chrom_sizes_hf, chrom_sizes_gr, chrom_sizes_chromHMM_binarize, chrom_sizes_chromHMM_l
+
+    //file 'tr_10_12_14_16_18_2_4_8_dt_food_fat_food_sc.bedGraph' into bedGraph_hf
+    //file 'tr_11_13_15_17_1_3_5_7_9_dt_food_sc.bedGraph' into bedGraph_ctrl
 
   	"""
   	pergola_rules.py -i ${batch_bg} -m ${mapping_file_bG} -max ${max} -f bedGraph -w 1800 -nt -e -dl food_sc food_fat -d all
+
+  	#pergola_rules.py -i ${batch_bg} -m ${mapping_file_bG} -max ${max} -f bedGraph -w 1800 -nt \
+  	#                 -e -dl food_sc food_fat -d all  -a join_all -t 1 3 5 7 9 11 13 15 17
+
+  	#pergola_rules.py -i ${batch_bg} -m ${mapping_file_bG} -max ${max} -f bedGraph -w 1800 -nt \
+  	#                 -e -dl food_sc food_fat -d all  -a join_all -t 2 4 8 10 12 14 16 18
+
   	# awk '{printf "%i", \$2/3600/24}' chrom.sizes
   	awk '{printf "%i", \$2/604800}' chrom.sizes
   	"""
@@ -400,7 +412,7 @@ bedGraph_out_bigwig_short_name = bedGraph_out_bigwig.flatten().map {
 
 
 /*
- * For each pair get the correlation using bigwig
+ * Convert bedGraph to bigWig files (deeptools input data)
  */
 process bedgraph_to_bigWig {
 
@@ -409,13 +421,63 @@ process bedgraph_to_bigWig {
     file chrom_sizes from chrom_sizes.first()
 
     output:
-    file '*.bw' into bigWig_matrix, bigWig_multiBigwigSummary
+    file '*.bw' into bigWig_matrix
 
     """
   	head -n -2 ${bedgr_file} > ${name}.trimmed
+
     bedGraphToBigWig ${name}.trimmed ${chrom_sizes} ${name}".bw"
-  	"""
+    """
 }
+
+process bedgraph_ctrl_to_bigWig {
+
+  	input:
+  	file (bedgr_file) from bedGraph_out_bigwig_ctrl.flatten()
+    file chrom_sizes from chrom_sizes_ctrl.first()
+
+    output:
+    file '*.bw' into bigWig_ctrl
+
+    """
+    bedGraphToBigWig ${bedgr_file} ${chrom_sizes} ${bedgr_file}".bw"
+    """
+}
+
+process bedgraph_ctrl_to_bigWig {
+
+  	input:
+  	file (bedgr_file) from bedGraph_out_bigwig_hf.flatten()
+    file chrom_sizes from chrom_sizes_hf.first()
+
+    output:
+    file '*.bw' into bigWig_hf
+
+    """
+    bedGraphToBigWig ${bedgr_file} ${chrom_sizes} ${bedgr_file}".bw"
+    """
+}
+
+process bedgraph_to_mean_gr_bigWig {
+
+  	input:
+  	file bedGraph_ctrl from bigWig_ctrl.collect()
+    file bedGraph_hf from bigWig_hf.collect()
+
+    file chrom_sizes from chrom_sizes_gr.first()
+
+    output:
+    file 'ctrl.bw' into bigWig_ctrl_matrix
+    file 'hf.bw' into bigWig_hf_matrix
+
+    """
+    export LD_LIBRARY_PATH=/usr/local/lib
+    wiggletools mean ${bedGraph_ctrl} | wigToBigWig stdin ${chrom_sizes} ctrl.bw
+    wiggletools mean ${bedGraph_hf} | wigToBigWig stdin ${chrom_sizes} hf.bw
+    """
+}
+
+//return
 
 // Parametrization for fast running, debugging
 /*
@@ -454,6 +516,30 @@ process deep_tools_matrix {
     computeMatrix scale-regions -S ${bigwig_file_ctrl} ${bigwig_file_hf}\
                                 -R ${dark_habituation} ${dark_development} \
                                 --beforeRegionStartLength ${before_start_length} \
+                                --regionBodyLength ${body_length} \
+                                --afterRegionStartLength ${after_end_length} \
+                                --skipZeros -out matrix.mat.gz
+    """
+}
+
+/*
+ *
+ */
+process deep_tools_matrix_groups {
+
+    input:
+    file dark_habituation from bed_dark_habituation_groups
+    file dark_development from bed_dark_development_groups
+    file bigwig_file_ctrl from bigWig_ctrl_matrix
+    file bigwig_file_hf from bigWig_hf_matrix
+
+    output:
+    file 'matrix.mat.gz' into matrix_heatmap_group, matrix_profile_group
+
+    """
+    computeMatrix scale-regions -S ${bigwig_file_ctrl} ${bigwig_file_hf}\
+                                -R ${dark_habituation} ${dark_development} \
+                                --beforeRegionStartLength ${before_start_length} \
                                 --regionBodyLength  ${body_length} \
                                 --afterRegionStartLength ${after_end_length} \
                                 --skipZeros -out matrix.mat.gz
@@ -483,7 +569,40 @@ process deep_tools_heatmap {
                 --xAxisLabel "Time (s)" \
                 --yAxisLabel "Food intake (g)" \
                 --sortRegions no \
-                --plotFileFormat ${image_format_deeptools}
+                --plotFileFormat ${image_format_deeptools} \
+                --colorMap YlGnBu
+
+    """
+}
+
+/*
+ *
+ */
+process deep_tools_heatmap_by_groups {
+
+    publishDir "${params.output_res}/deeptools/", mode: 'copy', overwrite: 'true'
+
+    input:
+    file matrix from matrix_heatmap_group
+
+    output:
+    file "*.${image_format_deeptools}" into heatmap_fig_gr
+
+    """
+    plotHeatmap -m ${matrix} \
+                -out heatmap_actogram_like_groups".${image_format_deeptools}" \
+                -z Habituation Development \
+                -T "Feeding behavior over 24 hours" \
+                --samplesLabel "Control mice" "High-Fat mice" \
+                --startLabel APS \
+                --endLabel RPS \
+                --xAxisLabel "Time (s)" \
+                --yAxisLabel "Food intake (g)" \
+                --sortRegions no \
+                --plotFileFormat ${image_format_deeptools} \
+                --heatmapWidth 8 \
+                --heatmapHeight 14 \
+                --colorMap YlGnBu
     """
 }
 
@@ -592,7 +711,7 @@ process binarize {
  */
 process HMM_model_learn {
 
-    publishDir "${params.output_res}/chromHMM", mode: 'copy', pattern: "!(*.bed)", overwrite: 'true'
+    publishDir "${params.output_res}/chromHMM", mode: 'copy', pattern: "!(*.bed)    ", overwrite: 'true'
 
     input:
     file chrom_sizes from chrom_sizes_chromHMM_l
@@ -600,7 +719,10 @@ process HMM_model_learn {
 
     output:
     file 'output_learn/*dense*.bed' into HMM_model_ANNOTATED_STATES
-    file 'output_learn/*.*' into HMM_full_results
+    //file 'output_learn/*.*' into HMM_full_results
+    file 'output_learn/emissions_*.*' into emission_results
+    file 'output_learn/transitions_*.*' into transitions_results
+
     file '*.bed' into segmentation_bed_to_plot
     file '*dense.bed' into segmentation_bed_to_fraction
     file 'colormappingfile' into tbl_states_color

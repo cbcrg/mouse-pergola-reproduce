@@ -106,7 +106,6 @@ names (argsL) <- argsDF$V1
   }
   else
   {
-    # stop (paste (">>>>>>>>>", ini_time))
     ini_time <- as.integer(argsL$ini_time)
   }
 }
@@ -139,6 +138,8 @@ names (argsL) <- argsDF$V1
 
 #############################
 ## Read files bed files
+end_time<-0
+ini_time <-0
 bed_files <- list.files(path=path_bed_files, pattern="dense\\.bed$", full.names=TRUE)
 
 bed_tracks <- lapply(bed_files, function (bed) {
@@ -157,6 +158,7 @@ states_names <- unique (bed_GR$name)
 color_by_tr <- unique (bed_GR$itemRgb)
 n_states <- length (states_names)
 names (color_by_tr) <- states_names
+state_names <- c("Long meals ", "Regular meals (2/3 min) ", "Inactive ", "Short meals ")
 
 names(bed_tracks) <- as.numeric(gsub(".+tr_(\\d+)(_.+$)", "\\1", bed_files))
 id_mice <- sort(as.numeric(gsub(".+tr_(\\d+)(_.+$)", "\\1", bed_files)))
@@ -168,7 +170,7 @@ bed_tracks <- bed_tracks[as.character(c(mice_id_odd, mice_id_even))]
 
 ## Plot
 
-size_labels <- 12
+size_labels <- 16
 cex_gtrack <- 1.4
 g_tr <- GenomeAxisTrack()
 
@@ -199,13 +201,13 @@ plot_legends <- ggplot(df_empty) + geom_point() +
 
 size_box_leg <- 6
 # size_box_leg <- 4
+
 plot_legends <- plot_legends + geom_point(data=df_legend, 
                                           aes(x=x, y=y, colour = n_states), 
                                           shape=15, size=size_box_leg) +
-  
-  scale_colour_manual (values=color_by_tr) + 
+  scale_colour_manual (values=color_by_tr, labels=state_names) + 
   guides(color=guide_legend(title=NULL)) + 
-  theme(legend.position="bottom", legend.justification=c(0, 0), 
+  theme(legend.position="bottom", legend.justification=c(1, 0), 
         legend.text=element_text(size=size_text_leg),
         legend.key = element_rect(fill = "white", colour = "white")) + 
   geom_blank()
@@ -223,32 +225,38 @@ plot_name <- "segmentation_HMM"
 
 {
   if (image_format == 'tiff' | image_format == 'tif') {
-    tiff(paste(plot_name, ".", image_format, sep=""), width = 45 , height = 34, units = "cm", res=300)
+    tiff(paste(plot_name, ".", image_format, sep=""), width = 80 , height = 40, units = "cm", res=300)
   }
   else if (image_format == 'pdf') {        
-    pdf(paste(plot_name, ".", image_format, sep=""), height=45, width=34)        
+    pdf(paste(plot_name, ".", image_format, sep=""), height=40, width=80)
   }
   else if (image_format == 'png') {        
-    png(paste(plot_name, ".", image_format, sep=""),  width = 50 , height = 34, units = "cm", res=300)
+    png(paste(plot_name, ".", image_format, sep=""),  width = 80 , height = 40, units = "cm", res=300)
   }
   else {
     stop (paste("Unknow image file format:", image_format, sep=" "))
   }
 }
 
+cex_gtrack <- 1
+v_height_tracks <- c(0.2, rep(0.1, length(unlist(bed_tracks))), rep(0.1,length(unlist(ctracks))))
+
 { 
   if (end_time == 0) {
-    plotTracks(c(g_tr, unlist(bed_tracks), unlist(ctracks)), 
+    plotTracks(c(g_tr, unlist(bed_tracks), unlist(ctracks)),
+    # plotTracks(c(g_tr, unlist(bed_tracks)),
                from=ini_time, 
                stacking="dense", 
                collapse=FALSE, 
                shape = "box", 
                col=NULL,
                fontsize=size_labels, 
-               cex=cex_gtrack)
+               cex=cex_gtrack,
+               sizes=v_height_tracks)
   }
   else {
-    plotTracks(c(g_tr, unlist(bed_tracks), unlist(ctracks)), 
+    plotTracks(c(g_tr, unlist(bed_tracks), unlist(ctracks)),
+    # plotTracks(c(g_tr, unlist(bed_tracks)),
                from=ini_time, to=end_time,
                stacking="dense", 
                collapse=FALSE, 
@@ -256,7 +264,8 @@ plot_name <- "segmentation_HMM"
                col=NULL,
                stacking = "dense",
                fontsize=size_labels, 
-               cex=cex_gtrack)
+               cex=cex_gtrack,
+               sizes=v_height_tracks)
   }
 }
 
