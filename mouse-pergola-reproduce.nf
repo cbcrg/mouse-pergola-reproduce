@@ -137,9 +137,9 @@ process behavior_by_week {
   	output:
   	file 'behaviors_by_week' into d_behaviors_by_week
   	stdout into max_time
-    file 'exp_phases' into exp_phases_bed_to_wr, exp_phases_bed_to_wr2, exp_phases_bed_to_fraction
+    file 'exp_phases' into exp_phases_bed_to_wr, exp_phases_bed_to_wr2, exp_phases_bed_to_fraction, exp_phases_bed_to_hmm
 
-	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz, days_bed_igv, days_bed_shiny, days_bed_deepTools
+	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz, days_bed_igv, days_bed_shiny, days_bed_deepTools, days_bed_gviz_hmm
     file 'Habituation_dark.bed' into bed_dark_habituation, bed_dark_habituation_groups
     file 'Development_dark.bed' into bed_dark_development, bed_dark_development_groups
     file 'whole_experiment_dark.bed' into whole_experiment_dark
@@ -461,8 +461,8 @@ process bedgraph_ctrl_to_bigWig {
 process bedgraph_to_mean_gr_bigWig {
 
   	input:
-  	file bedGraph_ctrl from bigWig_ctrl.collect()
-    file bedGraph_hf from bigWig_hf.collect()
+  	file bigwig_ctrl from bigWig_ctrl.collect()
+    file bigwig_hf from bigWig_hf.collect()
 
     file chrom_sizes from chrom_sizes_gr.first()
 
@@ -472,8 +472,8 @@ process bedgraph_to_mean_gr_bigWig {
 
     """
     export LD_LIBRARY_PATH=/usr/local/lib
-    wiggletools mean ${bedGraph_ctrl} | wigToBigWig stdin ${chrom_sizes} ctrl.bw
-    wiggletools mean ${bedGraph_hf} | wigToBigWig stdin ${chrom_sizes} hf.bw
+    wiggletools mean ${bigwig_ctrl} | wigToBigWig stdin ${chrom_sizes} ctrl.bw
+    wiggletools mean ${bigwig_hf} | wigToBigWig stdin ${chrom_sizes} hf.bw
     """
 }
 
@@ -601,7 +601,7 @@ process deep_tools_heatmap_by_groups {
                 --sortRegions no \
                 --plotFileFormat ${image_format_deeptools} \
                 --heatmapWidth 8 \
-                --heatmapHeight 14 \
+                --heatmapHeight 18 \
                 --colorMap YlGnBu
     """
 }
@@ -776,6 +776,8 @@ process plot_HMM_states {
 
     input:
     file 'output_learn/*' from segmentation_bed_to_plot.collect()
+    file exp_phases_bed from exp_phases_bed_to_hmm
+    file phases_bed from days_bed_gviz_hmm
 
     output:
     file "segmentation_HMM.${image_format}" into plot_HMM_segmentation
@@ -783,6 +785,8 @@ process plot_HMM_states {
     """
     plot_HMM_segmentation.R --path_bed_files=output_learn \
                             --ini_time=0 \
+                            --path_to_phases_file=${phases_bed} \
+                            --path_to_exp_phases_file=${exp_phases_bed} \
                             --image_format=${image_format}
                             # --end_time=1814400 \
     """
