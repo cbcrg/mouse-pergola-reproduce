@@ -65,6 +65,8 @@ if("--help" %in% args) {
       --path_bed_files=path_bed_files - character
       --ini_time=ini_time             - integer
       --end_time=end_time             - integer
+      --path_to_phases_file=path      - character
+      --path_to_exp_phases_file=path  - character
       --image_format=image_format     - character
       --help                          - print this text
       
@@ -115,11 +117,37 @@ names (argsL) <- argsDF$V1
   if (is.null (argsL$end_time))
   {
     end_time <- 0
-    write("[WARNING]: Initial time to plot not set, default 0", stderr())
+    write("[WARNING]: End time to plot not set, default 0", stderr())
   }
   else
   {
     end_time <- as.integer(argsL$end_time)
+  }
+}
+
+# phases file
+{
+    if (is.null (argsL$path_to_phases_file))
+    {
+        phases_file <- ""
+        write ("[WARNING]: path_to_phases_file arg not provided")
+    }
+    else
+    {
+        phases_file <- argsL$path_to_phases_file
+    }
+}
+
+# experimental phases file
+{
+  if (is.null (argsL$path_to_exp_phases_file))
+  {
+      exp_phases_file <- ""
+      write ("[WARNING]: path_to_exp_phases_file arg not provided")
+  }
+  else
+  {
+    exp_phases_file <- argsL$path_to_exp_phases_file
   }
 }
 
@@ -138,8 +166,8 @@ names (argsL) <- argsDF$V1
 
 #############################
 ## Read files bed files
-end_time<-0
-ini_time <-0
+# end_time<-0
+# ini_time <-0
 bed_files <- list.files(path=path_bed_files, pattern="dense\\.bed$", full.names=TRUE)
 
 bed_tracks <- lapply(bed_files, function (bed) {
@@ -159,6 +187,45 @@ color_by_tr <- unique (bed_GR$itemRgb)
 n_states <- length (states_names)
 names (color_by_tr) <- states_names
 state_names <- c("Long meals ", "Regular meals (2/3 min) ", "Inactive ", "Short meals ")
+
+
+## Reorder to show plots in the same order
+phases_file <- file.path(phases_file)
+name_phases_tr <- ""
+phases_color <- 'gray'
+col_back_title="brown"
+
+{
+  if(file.exists(phases_file)) {
+    bed_phases <- import(phases_file, format = "BED")
+    phases_tr <- AnnotationTrack(bed_phases, name = paste ("", name_phases_tr, sep=""),
+                                 fill = c("#EADAFF"),
+                                 background.title = col_back_title, col=NULL)
+  }
+  else {
+    phases_tr <- NULL
+  }
+}
+
+exp_phases_file <- file.path(exp_phases_file)
+name_exp_phases_tr <- ""
+phases_color <- 'gray'
+col_back_title="brown"
+
+{
+  if(file.exists(exp_phases_file)) {
+    bed_exp_phases <- import(exp_phases_file, format = "BED")
+    exp_phases_tr <- AnnotationTrack(bed_exp_phases, name = paste ("", name_exp_phases_tr, sep=""),
+                                 fill = c("#999999", "#000000"),
+                                 background.title = col_back_title, col=NULL)
+  }
+  else {
+    exp_phases_tr <- NULL
+  }
+}
+
+
+
 
 names(bed_tracks) <- as.numeric(gsub(".+tr_(\\d+)(_.+$)", "\\1", bed_files))
 id_mice <- sort(as.numeric(gsub(".+tr_(\\d+)(_.+$)", "\\1", bed_files)))
@@ -198,19 +265,27 @@ df_empty <- data.frame()
 plot_legends <- ggplot(df_empty) + geom_point() + 
                 theme(panel.border = element_blank(),
                 panel.background = element_blank())
-
 size_box_leg <- 6
 # size_box_leg <- 4
+
+{
+  if (image_format == 'pdf') {
+      size_box_leg <- size_box_leg * 3
+      size_text_leg <- size_text_leg * 3
+      cex_gtrack <- cex_gtrack * 2
+      size_labels <- size_labels * 2
+  }
+}
 
 plot_legends <- plot_legends + geom_point(data=df_legend, 
                                           aes(x=x, y=y, colour = n_states), 
                                           shape=15, size=size_box_leg) +
-  scale_colour_manual (values=color_by_tr, labels=state_names) + 
-  guides(color=guide_legend(title=NULL)) + 
-  theme(legend.position="bottom", legend.justification=c(1, 0), 
-        legend.text=element_text(size=size_text_leg),
-        legend.key = element_rect(fill = "white", colour = "white")) + 
-  geom_blank()
+                scale_colour_manual (values=color_by_tr, labels=state_names) +
+                guides(color=guide_legend(title=NULL)) +
+                theme(legend.position="bottom", legend.justification=c(1, 0),
+                      legend.text=element_text(size=size_text_leg),
+                      legend.key = element_rect(fill = "white", colour = "white")) +
+                geom_blank()
 
 ## Extract Legend 
 g_legend <- function(a.gplot){ 
@@ -227,7 +302,7 @@ plot_name <- "segmentation_HMM"
   if (image_format == 'tiff' | image_format == 'tif') {
     tiff(paste(plot_name, ".", image_format, sep=""), width = 80 , height = 40, units = "cm", res=300)
   }
-  else if (image_format == 'pdf') {        
+  else if (image_format == 'pdf') {
     pdf(paste(plot_name, ".", image_format, sep=""), height=40, width=80)
   }
   else if (image_format == 'png') {        
@@ -239,11 +314,11 @@ plot_name <- "segmentation_HMM"
 }
 
 cex_gtrack <- 1
-v_height_tracks <- c(0.2, rep(0.1, length(unlist(bed_tracks))), rep(0.1,length(unlist(ctracks))))
+v_height_tracks <- c(0.2, rep(0.1, length(unlist(bed_tracks))), 0.1, 0.1, rep(0.1,length(unlist(ctracks))))
 
 { 
   if (end_time == 0) {
-    plotTracks(c(g_tr, unlist(bed_tracks), unlist(ctracks)),
+    plotTracks(c(g_tr, unlist(bed_tracks), unlist(phases_tr), unlist(exp_phases_tr), unlist(ctracks)),
     # plotTracks(c(g_tr, unlist(bed_tracks)),
                from=ini_time, 
                stacking="dense", 
@@ -255,7 +330,7 @@ v_height_tracks <- c(0.2, rep(0.1, length(unlist(bed_tracks))), rep(0.1,length(u
                sizes=v_height_tracks)
   }
   else {
-    plotTracks(c(g_tr, unlist(bed_tracks), unlist(ctracks)),
+    plotTracks(c(g_tr, unlist(bed_tracks), unlist(phases_tr), unlist(exp_phases_tr), unlist(ctracks)),
     # plotTracks(c(g_tr, unlist(bed_tracks)),
                from=ini_time, to=end_time,
                stacking="dense", 
