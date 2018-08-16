@@ -22,8 +22,7 @@
 ### Jose A Espinosa. CSN/CB-CRG Group. May 2018              ###
 ################################################################
 ### Script creates several bed files corresponding to a bin  ###
-### of meals duration for a single period of time (intersect)###
-### e.g. week                                                ###
+### of meals duration for the whole experiment               ###
 ################################################################
 
 from argparse import ArgumentParser
@@ -34,28 +33,20 @@ from pybedtools.featurefuncs import greater_than, less_than
 
 parser = ArgumentParser(description='File input and options to process data')
 parser.add_argument('-b', '--bed_file', help='Bed file containing meals of a single animal/track', required=True)
-# parser.add_argument('-ct', '--coordinates_time_to_bed', help='Coordinates to generate a bed of a given time period',
-#                     required=True, nargs='+')
 parser.add_argument('-bins', '--bins', help='Lengths used to bin the meals by meal duration ', required=True, \
                     nargs='+', type=str)
 
 args = parser.parse_args()
 
 print >> stderr, "Bed file feeding behavior: %s", args.bed_file
-# print >> stderr, "Coordinates for time period intersection: %s" % ' '.join(str(c) for c in args.coordinates_time_to_bed)
 print >> stderr, "Values to perform the binning: %s" % ' '.join(str(b) for b in args.bins)
 
 bed_file_meals = args.bed_file
-# coord_period = args.coordinates_time_to_bed
 
 bins_list = args.bins[0].split(' ')
 bins = [ int(i) for i in bins_list ]
 
 bed_meals = pybedtools.BedTool(bed_file_meals)
-
-# bed_period = [("chr1", coord_period[0], coord_period[1], " ", 0, 0)]
-
-# bed_meals_by_period = bed_meals.intersect(pybedtools.BedTool(bed_period))
 
 for i, b in enumerate(bins):
     if i == 0:

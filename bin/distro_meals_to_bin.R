@@ -108,7 +108,6 @@ library ("ggplot2")
 source("https://gist.githubusercontent.com/JoseEspinosa/307430167b05e408ac071b8724701abf/raw/06b26f764953ceea53d334190d7b736308e5141d/param_plot_publication.R")
 
 # Whole experiment
-# path_bed_files <- "/Users/jespinosa/git/mouse_chrom_hmm/results_bed"
 pwd <- getwd()
 setwd(path_bed_files)
 files <- list.files(pattern=paste("tr_.*.bed$", sep=""))

@@ -319,21 +319,13 @@ process convert_bedGraph {
   	file '{tr_[1-9]_dt_*food*.bedGraph,tr_[1-9][0-9]_dt_*food*.bedGraph}' into bedGraph_out, bedGraph_out_shiny_p, bedGraph_out_gviz, bedGraph_out_sushi, bedGraph_out_bigwig
   	file '{tr_[1][1,3,5,7]_dt_*food*.bedGraph,tr_[1,3,5,7,9]_dt_*food*.bedGraph}' into bedGraph_out_bigwig_ctrl
   	file '{tr_[1][0,2,4,6,8]_dt_*food*.bedGraph,tr_[2,4,8]_dt_*food*.bedGraph}' into bedGraph_out_bigwig_hf
-  	file 'chrom.sizes' into chrom_sizes,chrom_sizes_ctrl,chrom_sizes_hf, chrom_sizes_gr, chrom_sizes_chromHMM_binarize, chrom_sizes_chromHMM_l
+  	file 'chrom.sizes' into chrom_sizes, chrom_sizes_ctrl,chrom_sizes_hf, chrom_sizes_gr, chrom_sizes_chromHMM_binarize, chrom_sizes_chromHMM_l
 
     //file 'tr_10_12_14_16_18_2_4_8_dt_food_fat_food_sc.bedGraph' into bedGraph_hf
     //file 'tr_11_13_15_17_1_3_5_7_9_dt_food_sc.bedGraph' into bedGraph_ctrl
 
   	"""
   	pergola_rules.py -i ${batch_bg} -m ${mapping_file_bG} -max ${max} -f bedGraph -w 1800 -nt -e -dl food_sc food_fat -d all
-
-  	#pergola_rules.py -i ${batch_bg} -m ${mapping_file_bG} -max ${max} -f bedGraph -w 1800 -nt \
-  	#                 -e -dl food_sc food_fat -d all  -a join_all -t 1 3 5 7 9 11 13 15 17
-
-  	#pergola_rules.py -i ${batch_bg} -m ${mapping_file_bG} -max ${max} -f bedGraph -w 1800 -nt \
-  	#                 -e -dl food_sc food_fat -d all  -a join_all -t 2 4 8 10 12 14 16 18
-
-  	# awk '{printf "%i", \$2/3600/24}' chrom.sizes
   	awk '{printf "%i", \$2/604800}' chrom.sizes
   	"""
 }
@@ -655,7 +647,7 @@ process bin {
 
     for file_bed in ${dir_bed_feeding}/*.bed
     do
-        bin_length_by_sliding_win.py -b \${file_bed} -bins "\$(< bins.txt)"
+        bin_by_length.py -b \${file_bed} -bins "\$(< bins.txt)"
     done
 
     mkdir bed_binned
@@ -711,7 +703,7 @@ process binarize {
  */
 process HMM_model_learn {
 
-    publishDir "${params.output_res}/chromHMM", mode: 'copy', pattern: "!(*.bed)    ", overwrite: 'true'
+    publishDir "${params.output_res}/chromHMM", mode: 'copy', pattern: "!(*.bed)", overwrite: 'true'
 
     input:
     file chrom_sizes from chrom_sizes_chromHMM_l
