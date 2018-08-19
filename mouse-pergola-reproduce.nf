@@ -469,9 +469,7 @@ process bedgraph_to_mean_gr_bigWig {
     """
 }
 
-//return
-
-// Parametrization for fast running, debugging
+// Parametrization for fast running, debugging //del
 /*
 before_start_length = 3000
 body_length = 5000
@@ -502,7 +500,7 @@ process deep_tools_matrix {
     file bigwig_file_hf from bigWig_matrix_hf.toSortedList{ it.name.replace(".bw", "").toInteger() }
 
     output:
-    file 'matrix.mat.gz' into matrix_heatmap, matrix_profile
+    file 'matrix.mat.gz' into matrix_heatmap
 
     """
     computeMatrix scale-regions -S ${bigwig_file_ctrl} ${bigwig_file_hf}\
@@ -526,7 +524,7 @@ process deep_tools_matrix_groups {
     file bigwig_file_hf from bigWig_hf_matrix
 
     output:
-    file 'matrix.mat.gz' into matrix_heatmap_group, matrix_profile_group
+    file 'matrix.mat.gz' into matrix_heatmap_group
 
     """
     computeMatrix scale-regions -S ${bigwig_file_ctrl} ${bigwig_file_hf}\
@@ -539,11 +537,11 @@ process deep_tools_matrix_groups {
 }
 
 /*
- * Plots a heatmap comparing the circadian profile of the mice by group using deeptools
+ * Plots a heatmap comparing the circadian profile of individual mouse using deeptools
  */
 process deep_tools_heatmap {
 
-    publishDir "${params.output_res}/deeptools/", mode: 'copy', overwrite: 'true'
+    publishDir "${params.output_res}/feeding_activity_profiles/", mode: 'copy', overwrite: 'true'
 
     input:
     file matrix from matrix_heatmap
@@ -563,16 +561,15 @@ process deep_tools_heatmap {
                 --sortRegions no \
                 --plotFileFormat ${image_format_deeptools} \
                 --colorMap YlGnBu
-
     """
 }
 
 /*
- *
+ * Plots a heatmap comparing the circadian profile of the mice by group using deeptools
  */
 process deep_tools_heatmap_by_groups {
 
-    publishDir "${params.output_res}/deeptools/", mode: 'copy', overwrite: 'true'
+    publishDir "${params.output_res}/feeding_activity_profiles/", mode: 'copy', overwrite: 'true'
 
     input:
     file matrix from matrix_heatmap_group
@@ -595,32 +592,6 @@ process deep_tools_heatmap_by_groups {
                 --heatmapWidth 8 \
                 --heatmapHeight 18 \
                 --colorMap YlGnBu
-    """
-}
-
-/*
- * Creates the circadian profile of the mice by group using deeptools
- */
-process deep_tools_profile {
-
-    publishDir "${params.output_res}/deeptools/", mode: 'copy', overwrite: 'true'
-
-    input:
-    file matrix from matrix_profile
-
-    output:
-    file "*.${image_format_deeptools}" into profile_fig
-
-    """
-    plotProfile -m ${matrix} \
-                -out profile".${image_format_deeptools}" \
-                --startLabel APS \
-                --endLabel RPS \
-                --yAxisLabel "Food intake (g)" \
-                --plotTitle "Feeding behavior over 24 hours" \
-                --regionsLabel Habituation Development \
-                --plotFileFormat ${image_format_deeptools}
-                #--xAxisLabel "Time (s)" \
     """
 }
 
@@ -711,9 +682,11 @@ process HMM_model_learn {
 
     output:
     file 'output_learn/*dense*.bed' into HMM_model_ANNOTATED_STATES
-    //file 'output_learn/*.*' into HMM_full_results
-    file 'output_learn/emissions_*.*' into emission_results
-    file 'output_learn/transitions_*.*' into transitions_results
+    //file 'output_learn/emissions_*.*' into HMM_emmission //del
+    //file 'output_learn/transitions_*.*' into HMM_transitions //del
+    file 'emissions_*.*' into HMM_emmission
+    file 'transitions_*.*' into HMM_transitions
+
 
     file '*.bed' into segmentation_bed_to_plot
     file '*dense.bed' into segmentation_bed_to_fraction
@@ -756,6 +729,9 @@ process HMM_model_learn {
                                                                    \${mice_id} \
                                                                    \${filename}
     done
+
+    mv output_learn/emissions_*.* ./
+    mv output_learn/transitions_*.* ./
     """
 }
 
