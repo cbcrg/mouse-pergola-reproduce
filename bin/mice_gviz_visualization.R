@@ -29,8 +29,6 @@ home <- Sys.getenv("HOME")
 ### Execution example
 ## Rscript density_heatmaps_tracking.R --files_str1="list_files_str1" --files_str2="list_files_str2"
 library(ggplot2)
-# library("Biostrings")
-# library("devtools")
 
 {
   if("Gviz" %in% rownames(installed.packages(lib.loc="/gviz/time")) == TRUE) {
@@ -304,7 +302,7 @@ plot_legends <- ggplot(df_empty) + geom_point() +
 # size_box_leg <- 5
 size_box_leg <- 6
 plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, colour = names), shape=15, size=size_box_leg) +
-                scale_colour_manual (values=color_by_tr) + 
+                scale_colour_manual (values=color_by_tr) +
                 guides(color=guide_legend(title=NULL)) + 
                 theme(legend.position="bottom", legend.justification=c(0, 0), 
                       legend.text=element_text(size=size_text_leg),
@@ -313,20 +311,15 @@ plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, colour =
 
 ## Adding heatmap scale to the legend
 bedGraphRange <- c(0, max_heatmap)
-plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, fill = 0)) +
-  scale_fill_gradientn (guide = "colorbar",
-                        colours = c(color_min, color_max),
-                        values = c(bedGraphRange[1], bedGraphRange[2]),
-                        limits = c(bedGraphRange[1], bedGraphRange[2]),
-                        breaks = c(bedGraphRange[1], bedGraphRange[2]),
-                        labels = c(bedGraphRange[1], paste(bedGraphRange[2],"    ", sep="")),
-                        name = "",
-                        rescaler = function(x,...) x,                                        
-                        oob = identity) + theme (legend.position = "none") + 
-  theme(legend.position="bottom", legend.justification=c(1,0), legend.text=element_text(size=size_text_leg)) +
-  geom_blank()  
 
-## Extract Legend 
+plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, fill = 0)) +
+                               scale_fill_gradient(labels = c(bedGraphRange[1], bedGraphRange[2]),
+                                                   low=color_min, high=color_max, limits=c(0, 1),
+                                                   breaks = c(bedGraphRange[1], 1)) +
+                               theme(legend.position="bottom", legend.justification=c(1,0), legend.text=element_text(size=size_text_leg)) +
+                               geom_blank()
+
+## Extract Legend
 g_legend <- function(a.gplot){ 
   tmp <- ggplot_gtable(ggplot_build(a.gplot)) 
   leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box") 

@@ -4,7 +4,8 @@
 ![CircleCI status](https://circleci.com/gh/cbcrg/mouse-pergola-reproduce.png?style=shield)
 [![nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.20.0-brightgreen.svg)](http://nextflow.io)
 
-This repository contains the software, scripts and data to reproduce the results corresponding to the CB1 mice experiment of the Pergola paper.
+This repository contains the software, scripts and data to reproduce the results corresponding to the high-fat diet mice experiment of the Pergola paper.
+The original source of this data set can be found on this [paper](https://onlinelibrary.wiley.com/doi/abs/10.1111/adb.12595)
 
 If you have not install yet [docker](https://www.docker.com/) and [nextflow](https://www.nextflow.io/), follow this [intructions](https://github.com/cbcrg/pergola-reproduce/blob/master/README.md)
 
@@ -17,33 +18,37 @@ cd mouse-pergola-reproduce
 
 ## Data
 
-Data is publicly available in [Zenodo](https://zenodo.org/) as a compressed tarball [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1154828.svg)](https://doi.org/10.5281/zenodo.1154828).
+Data is publicly available in [Zenodo](https://zenodo.org/) as a compressed tarball [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1154827.svg)](https://doi.org/10.5281/zenodo.1154827).
 
 Data can be downloaded and uncompressed using the following command:
 
 ```bash
 mkdir data
-wget -O- https://zenodo.org/record/1154828/files/mouse_dataset.tar.gz | tar xz -C data
+wget -O- https://zenodo.org/record/1300200/files/mouse_dataset.tar.gz | tar xz -C data
 ```
 
 ## Pull docker image
 Pull the Docker image use for processing data with Pergola (Pergola and its dependencies installed)
 
 ```bash
-docker pull pergola/pergola@sha256:0737f3e70dde73d0272a0be37e05a36a6fed390c8820c5d2834076b711ab707f
+docker pull pergola/pergola-reproduce@sha256:02bf3e701175104a488f40761b856efa1f97e2f2f82af8adae63b24ac2517326
 ```
 
 ## Run nextflow pipeline
 Once data is downloaded, it is possible to reproduce all the results using this command:
 
 ```bash
-NXF_VER=0.27.0 nextflow run mouse-pergola-reproduce.nf \
+NXF_VER=0.30.2 nextflow run mouse-pergola-reproduce.nf \
   --recordings='data/mouse_recordings/' \
   --mappings='data/mappings/b2p.txt' \
   --mappings_bed='data/mappings/bed2pergola.txt' \
   --phases='data/phases/exp_phases.csv' \
   --mappings_phase='data/mappings/f2g.txt' \
   --exp_info='data/mappings/exp_info.txt' \
+  --tbl_chromHMM="data/chromHMM_files/cellmarkfiletable" \   
+  --n_bins_HMM=5 \   
+  --n_states_HMM=4 \
+  --image_format='png' \
   -with-docker
 ```
 
@@ -56,6 +61,10 @@ The previous command generates a results folder that contains the results of the
 * A folder containing all the necessary files to render the raw feeding behavior and the the accumulated food intakes using [IGV](http://software.broadinstitute.org/software/igv/). Data is separated in folders corresponding to each mouse group.
 * A heatmap comparing the feeding behavior of high-fat mice group with their controls (fold change). 
 * A folder named **files** which contains the complete set of files needed to visualize the data using Shiny-pergola as explained below. 
+
+# MORE POINTS HERE
+
+* A 
 
 ## Online Shiny-Pergola visualization
 
