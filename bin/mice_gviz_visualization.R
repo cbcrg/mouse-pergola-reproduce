@@ -315,7 +315,7 @@ bedGraphRange <- c(0, max_heatmap)
 plot_legends <- plot_legends + geom_point(data=df_legend, aes(x=x, y=y, fill = 0)) +
                                scale_fill_gradient(labels = c(bedGraphRange[1], bedGraphRange[2]),
                                                    low=color_min, high=color_max, limits=c(0, 1),
-                                                   breaks = c(bedGraphRange[1], 1)) +
+                                                   breaks = c(bedGraphRange[1], 1), name = "") +
                                theme(legend.position="bottom", legend.justification=c(1,0), legend.text=element_text(size=size_text_leg)) +
                                geom_blank()
 
@@ -338,7 +338,7 @@ for (i in 1:10) {
   displayPars(ctracks[[i]]) <- list(background.title="transparent")
 }
 
-plot_name <- "mice_gviz_viz"
+plot_name <- "mice_gviz_viz_whole_experiment"
 
 {
     if (image_format == 'tiff' | image_format == 'tif') {
@@ -359,16 +359,86 @@ plot_name <- "mice_gviz_viz"
     }
 }
 
+v_height_tracks <- c(0.2,   rep(0.1, length(unlist(l_gr_annotation_tr_bed))), rep(0.1, length(unlist(l_gr_data_tr_bg))), 0.1, rep(0.1,length(unlist(ctracks))))
+
 p <- plotTracks(c(g_tr, unlist(l_gr_annotation_tr_bed), unlist(l_gr_data_tr_bg), phases_tr, files_tr, unlist(ctracks)),
 	       ##different windows of time selected
            # from=0, to=1814400, # 3 weeks
-           # from=26953, to=1841353, # 3 weeks # Shift the first hours until 8PM, this way phases look nicer
-           # from=26953, to=604800+26953, #habituation week
            from=26953, to=5443200, # 9 weeks
            # from=3628801, to=4233600, # week 7 (6 of development)
            ##range of heatmap data
            shape = "box", stacking = "dense",
-           fontsize=size_labels, cex=cex_gtrack)
+           fontsize = size_labels, cex=cex_gtrack,
+           sizes = v_height_tracks)
+
+grid.draw (leg_groups)
+
+dev.off()
+
+plot_name <- "mice_gviz_viz_habituation"
+
+{
+    if (image_format == 'tiff' | image_format == 'tif') {
+        tiff(paste(plot_name, ".", image_format, sep=""), width = 45 , height = 34, units = "cm", res=300)
+        size_lab <- 0.3
+    }
+    else if (image_format == 'pdf') {
+      pdf(paste(plot_name, ".", image_format, sep=""), width = 45 , height = 34)
+	    # pdf(paste(plot_name, ".", image_format, sep=""), width = 18.3 , height =24.7)
+        size_lab <- 0.5
+    }
+    else if (image_format == 'png') {
+        png(paste(plot_name, ".", image_format, sep=""), width = 50 , height = 34, units = "cm", res=300)
+        size_lab <- 0.3
+    }
+    else {
+        stop (paste("Unknow image file format:", image_format, sep=" "))
+    }
+}
+
+v_height_tracks <- c(0.2,   rep(0.1, length(unlist(l_gr_annotation_tr_bed))), rep(0.1, length(unlist(l_gr_data_tr_bg))), 0.1, rep(0.1,length(unlist(ctracks))))
+
+p <- plotTracks(c(g_tr, unlist(l_gr_annotation_tr_bed), unlist(l_gr_data_tr_bg), phases_tr, files_tr, unlist(ctracks)),
+           from=26953, to=604800+26953, #habituation week
+           ##range of heatmap data
+           shape = "box", stacking = "dense",
+           fontsize = size_labels, cex=cex_gtrack,
+           sizes = v_height_tracks)
+
+grid.draw (leg_groups)
+
+dev.off()
+
+plot_name <- "mice_gviz_viz_3_weeks"
+
+{
+    if (image_format == 'tiff' | image_format == 'tif') {
+        tiff(paste(plot_name, ".", image_format, sep=""), width = 45 , height = 34, units = "cm", res=300)
+        size_lab <- 0.3
+    }
+    else if (image_format == 'pdf') {
+      pdf(paste(plot_name, ".", image_format, sep=""), width = 45 , height = 34)
+	    # pdf(paste(plot_name, ".", image_format, sep=""), width = 18.3 , height =24.7)
+        size_lab <- 0.5
+    }
+    else if (image_format == 'png') {
+        png(paste(plot_name, ".", image_format, sep=""), width = 50 , height = 34, units = "cm", res=300)
+        size_lab <- 0.3
+    }
+    else {
+        stop (paste("Unknow image file format:", image_format, sep=" "))
+    }
+}
+
+v_height_tracks <- c(0.2,   rep(0.1, length(unlist(l_gr_annotation_tr_bed))), rep(0.1, length(unlist(l_gr_data_tr_bg))), 0.1, rep(0.1,length(unlist(ctracks))))
+
+p <- plotTracks(c(g_tr, unlist(l_gr_annotation_tr_bed), unlist(l_gr_data_tr_bg), phases_tr, files_tr, unlist(ctracks)),
+           from=26953, to=1841353, # 3 weeks # Shift the first hours until 8PM, this way phases look nicer
+           ##range of heatmap data
+           shape = "box", stacking = "dense",
+           fontsize = size_labels, cex=cex_gtrack,
+           sizes = v_height_tracks)
+
 grid.draw (leg_groups)
 
 dev.off()

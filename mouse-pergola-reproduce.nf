@@ -137,7 +137,7 @@ process behavior_by_week {
   	output:
   	file 'behaviors_by_week' into d_behaviors_by_week
   	stdout into max_time
-    file 'exp_phases' into exp_phases_bed_to_wr, exp_phases_bed_to_wr2, exp_phases_bed_to_fraction, exp_phases_bed_to_hmm
+    file 'exp_phases' into exp_phases_bed_to_wr, exp_phases_bed_to_wr2, exp_phases_bed_to_fraction, exp_phases_bed_to_hmm, exp_phases_bed_to_gviz
 
 	file 'stats_by_phase/phases_dark.bed' into exp_circadian_phases_sushi, exp_circadian_phases_gviz, days_bed_igv, days_bed_shiny, days_bed_deepTools, days_bed_gviz_hmm
     file 'Habituation_dark.bed' into bed_dark_habituation, bed_dark_habituation_groups
@@ -358,6 +358,7 @@ process gviz_visualization {
     file 'bed_dir/*' from bed_out_gviz.collect()
     file 'bedgr_dir/*' from bedGraph_out_gviz.collect()
     file exp_phases_bed from exp_circadian_phases_gviz
+    file experimental_phases_bed from exp_phases_bed_to_gviz
 
     output:
     file "*.${image_format}" into gviz
@@ -367,6 +368,7 @@ process gviz_visualization {
         --path_bed_files=bed_dir \
         --path_to_bedGraph_files=bedgr_dir \
         --path_to_phases_file=${exp_phases_bed} \
+        --path_to_exp_phases_file=${experimental_phases_bed} \
         --image_format=${image_format}
   	"""
 }
@@ -469,15 +471,11 @@ process bedgraph_to_mean_gr_bigWig {
     """
 }
 
-// Parametrization for fast running, debugging //del
-/*
-before_start_length = 3000
-body_length = 5000
-after_end_length = 3000
-*/
-// Parametrization for production
+// 6 hours before the starting of the dark (active phase)
 before_start_length = 21600
+// the 12 hours corresponding to the active phase
 body_length = 43200
+// 6 hours after the end of the dark (active phase)
 after_end_length = 21600
 
 // Order bigwig by group to show all mice of the same group together in the heatmap
@@ -513,7 +511,7 @@ process deep_tools_matrix {
 }
 
 /*
- *
+ * Creates the matrix that is used to plot the profiles and heatmaps
  */
 process deep_tools_matrix_groups {
 
@@ -674,7 +672,7 @@ process binarize {
  */
 process HMM_model_learn {
 
-    publishDir "${params.output_res}/chromHMM", mode: 'copy', pattern: "!(*.bed)", overwrite: 'true'
+    publishDir "${params.output_res}/chromHMM/emissions_transitions", mode: 'copy', pattern: "!(*.bed)", overwrite: 'true'
 
     input:
     file chrom_sizes from chrom_sizes_chromHMM_l
@@ -682,8 +680,6 @@ process HMM_model_learn {
 
     output:
     file 'output_learn/*dense*.bed' into HMM_model_ANNOTATED_STATES
-    //file 'output_learn/emissions_*.*' into HMM_emmission //del
-    //file 'output_learn/transitions_*.*' into HMM_transitions //del
     file 'emissions_*.*' into HMM_emmission
     file 'transitions_*.*' into HMM_transitions
 
@@ -740,7 +736,7 @@ process HMM_model_learn {
  */
 process plot_HMM_states {
 
-    publishDir "${params.output_res}/chromHMM/", mode: 'copy', overwrite: 'true'
+    publishDir "${params.output_res}/chromHMM/plots/", mode: 'copy', overwrite: 'true'
 
     input:
     file 'output_learn/*' from segmentation_bed_to_plot.collect()
