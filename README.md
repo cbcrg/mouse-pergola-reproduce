@@ -1,6 +1,5 @@
 # mouse-pergola-reproduce.nf
-
-[![DOI](https://zenodo.org/badge/112313774.svg)](https://zenodo.org/badge/latestdoi/112313774)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1300200.svg)](https://doi.org/10.5281/zenodo.1300200)
 ![CircleCI status](https://circleci.com/gh/cbcrg/mouse-pergola-reproduce.png?style=shield)
 [![nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.20.0-brightgreen.svg)](http://nextflow.io)
 
@@ -60,11 +59,9 @@ The previous command generates a results folder that contains the results of the
 * A figure created using [Sushi](https://bioconductor.org/packages/release/bioc/html/Sushi.html) rendering the same layout as in the previous figure.
 * A folder containing all the necessary files to render the raw feeding behavior and the the accumulated food intakes using [IGV](http://software.broadinstitute.org/software/igv/). Data is separated in folders corresponding to each mouse group.
 * A heatmap comparing the feeding behavior of high-fat mice group with their controls (fold change). 
-* A folder named **files** which contains the complete set of files needed to visualize the data using Shiny-pergola as explained below. 
-
-# MORE POINTS HERE
-
-* A 
+* A folder named **feeding_activity_profiles** containing the actograms generated using [deepTools](https://deeptools.readthedocs.io/en/develop/#).
+* All files regarding the HMM modeling of the data using [chromHMM](http://compbio.mit.edu/ChromHMM/) can be found on **chromHMM** folder.
+* A folder named **files** which contains the complete set of files needed to visualize the data using Shiny-pergola as explained below.
 
 ## Online Shiny-Pergola visualization
 
