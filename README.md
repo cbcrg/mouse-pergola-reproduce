@@ -44,8 +44,8 @@ NXF_VER=0.30.2 nextflow run mouse-pergola-reproduce.nf \
   --phases='data/phases/exp_phases.csv' \
   --mappings_phase='data/mappings/f2g.txt' \
   --exp_info='data/mappings/exp_info.txt' \
-  --tbl_chromHMM="data/chromHMM_files/cellmarkfiletable" \   
-  --n_bins_HMM=5 \   
+  --tbl_chromHMM="data/chromHMM_files/cellmarkfiletable" \
+  --n_bins_HMM=5 \
   --n_states_HMM=4 \
   --image_format='png' \
   -with-docker
