@@ -672,7 +672,7 @@ process binarize {
  */
 process HMM_model_learn {
 
-    publishDir "${params.output_res}/chromHMM/emissions_transitions", mode: 'copy', pattern: "*.png", overwrite: 'true'
+    publishDir "${params.output_res}/chromHMM/", mode: 'copy', pattern: "*.png", overwrite: 'true'
 
     input:
     file chrom_sizes from chrom_sizes_chromHMM_l
@@ -736,7 +736,7 @@ process HMM_model_learn {
  */
 process plot_HMM_states {
 
-    publishDir "${params.output_res}/chromHMM/plots/", mode: 'copy', overwrite: 'true'
+    publishDir "${params.output_res}/chromHMM/", mode: 'copy', overwrite: 'true'
 
     input:
     file 'output_learn/*' from segmentation_bed_to_plot.collect()
